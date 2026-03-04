@@ -26,7 +26,13 @@ function useInstructorTrafficLights(routeWaypoints, count = 5) {
         const initial = positions.map((pos, i) => ({
             id: `tl_${i}`, position: pos,
             stateIdx: (i + Math.floor(Math.random() * 3)) % 4,
-            durations: [12000 + Math.random() * 10000, 2000, 6000 + Math.random() * 6000, 2000],
+            // GREEN: 45-90s   YELLOW: 3s   RED: 15-25s — realistic timing
+            durations: [
+                45000 + Math.random() * 45000,  // GREEN
+                3000,                            // YELLOW→RED
+                15000 + Math.random() * 10000,  // RED
+                3000,                            // YELLOW→GREEN
+            ],
         }));
 
         setLights(initial.map(l => ({ id: l.id, position: l.position, state: STATES[l.stateIdx] })));

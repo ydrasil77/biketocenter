@@ -197,21 +197,24 @@ function startBotLoop(roomCode, io) {
     }, 500);
 }
 
-// ── Traffic light ─────────────────────────────────────────────
+// ── Traffic light — slow, realistic timing ────────────────────
 function scheduleLight(roomCode, io) {
     const room = ROOMS.get(roomCode);
     if (!room) return;
     const isGreen = room.trafficState === 'GREEN';
-    const delay = isGreen ? 15000 + Math.random() * 15000 : 5000 + Math.random() * 5000;
+    // GREEN: 45–90 s   RED: 15–25 s
+    const delay = isGreen
+        ? 45000 + Math.random() * 45000
+        : 15000 + Math.random() * 10000;
     room.lightTimer = setTimeout(() => {
         const r = ROOMS.get(roomCode);
         if (!r) return;
         if (isGreen) {
             r.trafficState = 'YELLOW'; io?.to(roomCode).emit('LIGHT_CHANGE', { state: 'YELLOW' });
-            setTimeout(() => { const r2 = ROOMS.get(roomCode); if (!r2) return; r2.trafficState = 'RED'; io?.to(roomCode).emit('LIGHT_CHANGE', { state: 'RED' }); scheduleLight(roomCode, io); }, 1500);
+            setTimeout(() => { const r2 = ROOMS.get(roomCode); if (!r2) return; r2.trafficState = 'RED'; io?.to(roomCode).emit('LIGHT_CHANGE', { state: 'RED' }); scheduleLight(roomCode, io); }, 3000);
         } else {
             r.trafficState = 'YELLOW'; io?.to(roomCode).emit('LIGHT_CHANGE', { state: 'YELLOW' });
-            setTimeout(() => { const r2 = ROOMS.get(roomCode); if (!r2) return; r2.trafficState = 'GREEN'; io?.to(roomCode).emit('LIGHT_CHANGE', { state: 'GREEN' }); scheduleLight(roomCode, io); }, 1500);
+            setTimeout(() => { const r2 = ROOMS.get(roomCode); if (!r2) return; r2.trafficState = 'GREEN'; io?.to(roomCode).emit('LIGHT_CHANGE', { state: 'GREEN' }); scheduleLight(roomCode, io); }, 3000);
         }
     }, delay);
 }

@@ -31,7 +31,8 @@ const BOT_PROFILES = [
 ];
 
 const TL_STATES = ['GREEN', 'YELLOW', 'RED', 'YELLOW'];
-const TL_DURATIONS = [14000, 2000, 8000, 2000]; // ms per state
+// GREEN: ~60s   YELLOW: 3s   RED: ~20s — realistic, not aggressive
+const TL_DURATIONS = [60000, 3000, 20000, 3000]; // ms per state
 
 /** Convert W/kg → km/h using stable binary search */
 function wkgToSpeed(wkg, weight) {

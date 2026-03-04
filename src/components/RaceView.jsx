@@ -28,7 +28,13 @@ function useMapTrafficLights(routeWaypoints, count = 5) {
         const initial = positions.map((pos, i) => ({
             id: `tl_${i}`, position: pos,
             stateIdx: (i + Math.floor(Math.random() * 3)) % 4,
-            durations: [12000 + Math.random() * 10000, 2000, 6000 + Math.random() * 6000, 2000],
+            // GREEN: 45-90s   YELLOW: 3s   RED: 15-25s
+            durations: [
+                45000 + Math.random() * 45000,  // GREEN
+                3000,                            // YELLOW→RED
+                15000 + Math.random() * 10000,  // RED
+                3000,                            // YELLOW→GREEN
+            ],
         }));
         setLights(initial.map(l => ({ id: l.id, position: l.position, state: STATES[l.stateIdx] })));
 
@@ -114,7 +120,13 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
     const playerRouteLights = useMapTrafficLights(routeWaypoints, 5);
     const allBotLights = Object.values(botLights).flat();
     const mapTrafficLights = [...playerRouteLights, ...allBotLights];
-    const playerAtRed = playerRouteLights.some(l => l.state === 'RED');
+    // Player only stopped when within 40 m of a red light they are riding toward
+    const playerPosition = physics.position;
+    const playerAtRed = playerRouteLights.some(l => {
+        if (l.state !== 'RED') return false;
+        if (!playerPosition || !l.position) return false;
+        return haversine(playerPosition, l.position) < 0.04; // 40 m radius
+    });
 
     // ── Join room ──────────────────────────────────────────────
     useEffect(() => {
@@ -345,7 +357,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                     ))}
                 </div>
 
-                {/* Second row: dist, elapsed, cadence, zone + controls */}
+                {/* Second row: dist, elapsed, cadence + BT status + controls */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
                     <div style={{ flex: 1, display: 'flex', gap: 8 }}>
                         {[
@@ -359,6 +371,22 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                             </div>
                         ))}
                     </div>
+
+                    {/* BT status pill */}
+                    <div style={{
+                        background: bluetooth.bikeConnected ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${bluetooth.bikeConnected ? 'rgba(34,197,94,0.35)' : '#1e1e2e'}`,
+                        borderRadius: 10, padding: '6px 10px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0,
+                    }}>
+                        <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif' }}>BT</div>
+                        <div style={{
+                            width: 10, height: 10, borderRadius: '50%',
+                            background: bluetooth.bikeConnected ? '#22c55e' : bluetooth.hrConnected ? '#ef4444' : '#2a2a3a',
+                            boxShadow: bluetooth.bikeConnected ? '0 0 6px #22c55e' : 'none',
+                        }} />
+                    </div>
+
                     {/* Controls */}
                     <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => setIsSimulating(s => !s)} style={ctrlBtn(isSimulating, '#22c55e')}>

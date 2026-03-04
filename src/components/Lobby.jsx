@@ -1,8 +1,81 @@
 // ============================================================
 // Lobby — Setup screen with role, BT, bots, race distance
 // ============================================================
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CITIES } from '../utils/cities';
+
+// BT Connection Modal: full-screen overlay while scanning / connecting
+function BtModal({ status, statusMsg, onDismiss }) {
+    if (status !== 'connecting' && status !== 'connected' && status !== 'error') return null;
+    const isConnecting = status === 'connecting';
+    const isConnected = status === 'connected';
+    const isError = status === 'error';
+
+    return (
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 9000,
+            background: 'rgba(4,4,7,0.92)',
+            backdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+            <div style={{
+                background: '#0d0d14',
+                border: `1px solid ${isConnected ? 'rgba(34,197,94,0.4)' : isError ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.3)'}`,
+                borderRadius: 24, padding: '40px 48px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
+                boxShadow: `0 0 60px ${isConnected ? 'rgba(34,197,94,0.12)' : isError ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.12)'}`,
+                maxWidth: 360, textAlign: 'center',
+            }}>
+                {/* Icon */}
+                <div style={{ fontSize: 56, lineHeight: 1 }}>
+                    {isConnecting ? '📡' : isConnected ? '✅' : '❌'}
+                </div>
+
+                {/* Spinner (only while connecting) */}
+                {isConnecting && (
+                    <div style={{
+                        width: 48, height: 48,
+                        border: '4px solid rgba(59,130,246,0.2)',
+                        borderTop: '4px solid #3b82f6',
+                        borderRadius: '50%',
+                        animation: 'btSpin 0.8s linear infinite',
+                    }} />
+                )}
+
+                <div>
+                    <div style={{
+                        fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
+                        fontSize: 24, fontWeight: 900,
+                        color: isConnected ? '#22c55e' : isError ? '#ef4444' : '#fff',
+                        marginBottom: 8,
+                    }}>
+                        {isConnecting ? 'CONNECTING…' : isConnected ? 'CONNECTED!' : 'CONNECTION FAILED'}
+                    </div>
+                    <div style={{
+                        fontSize: 13, color: '#94a3b8',
+                        fontFamily: 'Inter, sans-serif', lineHeight: 1.5,
+                    }}>{statusMsg}</div>
+                </div>
+
+                {/* Dismiss button (not shown while connecting) */}
+                {!isConnecting && (
+                    <button onClick={onDismiss} style={{
+                        background: isConnected ? 'linear-gradient(135deg,#15803d,#22c55e)' : 'rgba(255,255,255,0.06)',
+                        border: 'none', borderRadius: 12,
+                        padding: '12px 32px', color: '#fff',
+                        fontWeight: 700, fontSize: 14, letterSpacing: 1, cursor: 'pointer',
+                        fontFamily: 'Inter, sans-serif',
+                    }}>
+                        {isConnected ? 'LETS GO 🚴' : 'TRY AGAIN'}
+                    </button>
+                )}
+            </div>
+
+            {/* Keyframe animation */}
+            <style>{`@keyframes btSpin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+    );
+}
 
 const RACE_DISTANCES = [
     { label: '2 km  (~5–10 min)', km: 2 },
@@ -26,6 +99,19 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole }) {
 
     const { bikeConnected, hrConnected, status, statusMsg, savedDevice, connectBike, quickReconnect, clearSavedDevice } = bluetooth;
     const btConnected = bikeConnected || hrConnected;
+    const [showBtModal, setShowBtModal] = useState(false);
+
+    // Show modal whenever BT state changes away from idle
+    useEffect(() => {
+        if (status === 'connecting') setShowBtModal(true);
+        if (status === 'connected') setShowBtModal(true);
+        if (status === 'error') setShowBtModal(true);
+    }, [status]);
+
+    function handleConnect() {
+        setShowBtModal(true);
+        connectBike();
+    }
 
     // Estimated time helper
     function etaLabel(km) {
@@ -179,32 +265,76 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole }) {
                 </div>
 
 
-                {/* Bluetooth + Start */}
+                {/* ── Bluetooth section ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {savedDevice && !btConnected && (
-                        <button onClick={quickReconnect} style={{
-                            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
-                            borderRadius: 10, padding: '10px 14px', color: '#22c55e', fontWeight: 700,
-                            fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+
+                    {/* Web BT not supported warning */}
+                    {typeof navigator !== 'undefined' && !navigator.bluetooth && (
+                        <div style={{
+                            background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.25)',
+                            borderRadius: 10, padding: '8px 14px',
+                            fontSize: 11, color: '#eab308', fontFamily: 'Inter,sans-serif', lineHeight: 1.5,
                         }}>
-                            <span>⚡ Quick Reconnect: {savedDevice.name}</span>
-                            <span onClick={e => { e.stopPropagation(); clearSavedDevice(); }}
-                                style={{ fontSize: 11, color: '#52526a', textDecoration: 'underline', cursor: 'pointer' }}>forget</span>
-                        </button>
+                            ⚠️ Web Bluetooth requires Chrome or Edge on desktop / Android — not supported in this browser.
+                        </div>
                     )}
 
-                    <button onClick={() => connectBike()} disabled={status === 'connecting'} style={{
-                        background: btConnected ? 'rgba(34,197,94,0.12)' : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
-                        border: `1px solid ${btConnected ? '#22c55e' : 'transparent'}`,
-                        borderRadius: 12, padding: '13px 20px', color: '#fff', fontWeight: 700,
-                        fontSize: 14, letterSpacing: 1, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                        boxShadow: btConnected ? 'none' : '0 4px 20px rgba(59,130,246,0.35)',
-                        opacity: status === 'connecting' ? 0.7 : 1,
-                    }}>
-                        {btConnected ? `✅ ${statusMsg}` : status === 'connecting' ? `🔄 ${statusMsg}` : '📡 CONNECT BODY BIKE SMART+'}
-                    </button>
+                    {/* Connected panel */}
+                    {btConnected ? (
+                        <div style={{
+                            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)',
+                            borderRadius: 12, padding: '12px 16px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            gap: 12,
+                        }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: '#22c55e', fontFamily: 'Inter,sans-serif' }}>
+                                    📡 BODY BIKE CONNECTED
+                                </div>
+                                <div style={{ display: 'flex', gap: 10, fontSize: 11, fontFamily: 'Inter,sans-serif' }}>
+                                    <span style={{ color: bikeConnected ? '#22c55e' : '#52526a' }}>
+                                        {bikeConnected ? '✅ Power + Cadence' : '⚪ Power'}
+                                    </span>
+                                    <span style={{ color: hrConnected ? '#ef4444' : '#52526a' }}>
+                                        {hrConnected ? '❤️ Heart Rate' : '⚪ HR'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button onClick={handleConnect} style={{
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid #1e1e2e',
+                                borderRadius: 8, padding: '6px 12px', color: '#52526a',
+                                fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter,sans-serif',
+                            }}>Reconnect</button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Quick Reconnect shortcut */}
+                            {savedDevice && (
+                                <button onClick={() => { setShowBtModal(true); quickReconnect(); }} style={{
+                                    background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)',
+                                    borderRadius: 10, padding: '10px 14px', color: '#22c55e', fontWeight: 700,
+                                    fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                }}>
+                                    <span>⚡ Quick Reconnect: {savedDevice.name}</span>
+                                    <span onClick={e => { e.stopPropagation(); clearSavedDevice(); }}
+                                        style={{ fontSize: 10, color: '#52526a', textDecoration: 'underline', cursor: 'pointer' }}>forget</span>
+                                </button>
+                            )}
+                            {/* Main connect button */}
+                            <button onClick={handleConnect} style={{
+                                background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+                                border: 'none', borderRadius: 12, padding: '13px 20px',
+                                color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: 1,
+                                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                boxShadow: '0 4px 20px rgba(59,130,246,0.35)',
+                            }}>
+                                📡 CONNECT BODY BIKE SMART+
+                            </button>
+                        </>
+                    )}
 
+                    {/* JOIN RACE / OPEN INSTRUCTOR VIEW */}
                     <button onClick={handleStart} style={{
                         background: 'linear-gradient(135deg, #15803d, #22c55e)',
                         border: 'none', borderRadius: 12, padding: '13px 20px',
@@ -219,6 +349,15 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole }) {
                     </p>
                 </div>
             </div>
+
+            {/* BT Connection Modal — shown while connecting / after connect / on error */}
+            {showBtModal && (
+                <BtModal
+                    status={status}
+                    statusMsg={statusMsg}
+                    onDismiss={() => setShowBtModal(false)}
+                />
+            )}
         </div>
     );
 }
