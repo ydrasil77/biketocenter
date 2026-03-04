@@ -287,6 +287,50 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
             </div>
 
 
+            {/* ── RIGHT LEADERBOARD PANEL ──────────────────────── */}
+            <div style={{
+                position: 'absolute', top: 56, right: 16, zIndex: 300,
+                display: 'flex', flexDirection: 'column',
+                pointerEvents: 'none',
+            }}>
+                <div style={{ pointerEvents: 'auto' }}>
+                    <Leaderboard players={allPlayers} myId={myEntry.id} />
+                </div>
+            </div>
+
+            {/* ── WAITING SCREEN (Pre-Race) ────────────────────────── */}
+            {!raceStarted && countdown === null && (
+                <div style={{
+                    position: 'absolute', inset: 0, zIndex: 350,
+                    background: 'rgba(4,4,7,0.85)', backdropFilter: 'blur(8px)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    <div style={{
+                        background: '#0d0d14', border: '1px solid #1e1e2e',
+                        borderRadius: 20, padding: 40, textAlign: 'center',
+                        maxWidth: 400, width: '90%',
+                        boxShadow: '0 0 60px rgba(59,130,246,0.1)',
+                        pointerEvents: 'auto',
+                    }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+                        <h2 style={{
+                            fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
+                            fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 8,
+                        }}>WAITING FOR INSTRUCTOR</h2>
+                        <p style={{ fontSize: 13, color: '#94a3b8', fontFamily: 'Inter,sans-serif', lineHeight: 1.5, marginBottom: 24 }}>
+                            The instructor is setting up the session. The race will begin automatically when they start the countdown.
+                        </p>
+                        <div style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 8,
+                            background: 'rgba(255,255,255,0.05)', borderRadius: 99, padding: '6px 16px',
+                        }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'btSpin 1s linear infinite' }} />
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#e2e2f0', letterSpacing: 1 }}>ROOM {roomCode}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── COUNTDOWN overlay ────────────────────────────── */}
             {countdown !== null && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(0,0,0,0.25)' }}>

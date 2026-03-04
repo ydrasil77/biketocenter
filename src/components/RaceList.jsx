@@ -14,47 +14,42 @@ export default function RaceList({ socket, bluetooth, onJoin, onBack }) {
     const [loading, setLoading] = useState(true);
     const [manualCode, setManualCode] = useState('');
 
-    // Ask server for room list — handles socket not yet connected
+    // Ask server for room list when socket connects
     useEffect(() => {
         const raw = socket?.rawSocket;
         let poll;
 
+        if (!raw || !socket.connected) {
+            // Still connecting
+            return;
+        }
+
         function requestList() {
-            raw?.emit('list_rooms');
+            raw.emit('list_rooms');
         }
 
-        if (raw) {
-            // If already connected, emit immediately
-            if (raw.connected) {
-                requestList();
-                setLoading(false); // will be updated by room_list or timeout
-            } else {
-                // Wait for connection then ask
-                raw.once('connect', () => {
-                    setTimeout(requestList, 200);
-                });
-            }
+        // We are connected, fetch immediately
+        requestList();
 
-            raw.on('room_list', (data) => {
-                setRooms(data ?? []);
-                setLoading(false);
-            });
-
-            // Poll every 3s to keep list fresh
-            poll = setInterval(requestList, 3000);
-        } else {
+        raw.on('room_list', (data) => {
+            setRooms(data ?? []);
             setLoading(false);
-        }
+        });
 
-        // Fallback: stop loading after 4s even if no server
-        const fallback = setTimeout(() => setLoading(false), 4000);
+        // Poll every 3s
+        poll = setInterval(requestList, 3000);
 
         return () => {
-            clearTimeout(fallback);
             clearInterval(poll);
-            raw?.off('room_list');
+            raw.off('room_list');
         };
-    }, [socket?.rawSocket]); // eslint-disable-line
+    }, [socket?.rawSocket, socket?.connected]);
+
+    // Fallback: stop loading after 4s even if no server connection happens
+    useEffect(() => {
+        const fallback = setTimeout(() => setLoading(false), 4000);
+        return () => clearTimeout(fallback);
+    }, []);
 
     function joinRoom(room) {
         onJoin({
