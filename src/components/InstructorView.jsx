@@ -1,0 +1,218 @@
+// ============================================================
+// InstructorView — Full-screen map for class instructor
+// New: "Simulate Race with Bots" button + bots on map
+// ============================================================
+import { useEffect, useState, useRef } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import MapView from './MapView';
+import TrafficLight from './TrafficLight';
+import Leaderboard, { PLAYER_DOT_COLORS } from './Leaderboard';
+import { CITIES } from '../utils/cities';
+import { useBots } from '../hooks/useBots';
+import { fetchStreetRoute, sampleRoutePositions } from '../utils/routing';
+
+// Independent traffic lights for the instructor map
+function useInstructorTrafficLights(routeWaypoints, count = 5) {
+    const [lights, setLights] = useState([]);
+    const timersRef = useRef([]);
+
+    useEffect(() => {
+        timersRef.current.forEach(clearTimeout);
+        timersRef.current = [];
+        if (!routeWaypoints || routeWaypoints.length < 2) return;
+
+        const STATES = ['GREEN', 'YELLOW', 'RED', 'YELLOW'];
+        const positions = sampleRoutePositions(routeWaypoints, count);
+        const initial = positions.map((pos, i) => ({
+            id: `tl_${i}`, position: pos,
+            stateIdx: (i + Math.floor(Math.random() * 3)) % 4,
+            durations: [12000 + Math.random() * 10000, 2000, 6000 + Math.random() * 6000, 2000],
+        }));
+
+        setLights(initial.map(l => ({ id: l.id, position: l.position, state: STATES[l.stateIdx] })));
+
+        initial.forEach(light => {
+            let idx = light.stateIdx;
+            function tick() {
+                idx = (idx + 1) % 4;
+                setLights(prev => prev.map(l => l.id === light.id ? { ...l, state: STATES[idx] } : l));
+                const t = setTimeout(tick, light.durations[idx]);
+                timersRef.current.push(t);
+            }
+            const t = setTimeout(tick, light.durations[idx]);
+            timersRef.current.push(t);
+        });
+
+        return () => timersRef.current.forEach(clearTimeout);
+    }, [routeWaypoints, count]); // eslint-disable-line
+
+    return lights;
+}
+
+export default function InstructorView({ config, socket, onLeave }) {
+    const { city, roomCode, radiusKm = 2 } = config;
+    const cityData = CITIES[city];
+    const targetPos = cityData.center;
+
+    const { trafficState, players, countdown, raceStarted, joinRoom, triggerStart } = socket;
+
+    const [countdownStarted, setCountdownStarted] = useState(false);
+    const [simBotCount, setSimBotCount] = useState(8);
+    const [simActive, setSimActive] = useState(false);
+    const [routeWaypoints, setRouteWaypoints] = useState(null);
+
+    useEffect(() => {
+        joinRoom(roomCode, { name: 'Instructor', city, role: 'instructor', radiusKm });
+    }, []); // eslint-disable-line
+
+    // Fetch route for map + bots
+    useEffect(() => {
+        const center = cityData.center;
+        const startLat = center[0] + radiusKm / 111.32;
+        fetchStreetRoute([startLat, center[1]], center)
+            .then(result => {
+                // fetchStreetRoute now returns {waypoints, steps, distKm}
+                const wp = Array.isArray(result) ? result : result?.waypoints ?? null;
+                setRouteWaypoints(wp);
+            })
+            .catch(() => { });
+    }, [city, radiusKm]); // eslint-disable-line
+
+    // Client-side bots — each gets its own unique OSRM route + traffic lights
+    const { bots: botPlayers, routes: botRoutes, botLights } = useBots({
+        count: simActive ? simBotCount : 0,
+        targetPos,
+        radiusKm,
+        trafficState,
+    });
+    // Pass every bot's individual route to MapView so they all draw their own colored line
+    const playerRoutes = {
+        ...botRoutes,
+        ...Object.fromEntries(
+            players
+                .filter(p => p.role !== 'instructor')
+                .map((p, i) => [p.id, routeWaypoints ?? []])
+        ),
+    };
+
+    // Traffic lights: shared reference lights + all per-bot route lights
+    const sharedLights = useInstructorTrafficLights(routeWaypoints, 3);
+    const allBotLights = Object.values(botLights).flat();
+    const mapTrafficLights = [...sharedLights, ...allBotLights];
+    const joinUrl = `${window.location.origin}?room=${roomCode}`;
+
+    const allPlayers = [
+        ...players.map((p, i) => ({ ...p, color: PLAYER_DOT_COLORS[i % PLAYER_DOT_COLORS.length] })),
+        ...botPlayers,
+    ];
+    const riderCount = players.filter(p => p.role !== 'instructor').length + botPlayers.length;
+
+    function handleStart() {
+        setCountdownStarted(true);
+        triggerStart(roomCode);
+        if (!simActive && simBotCount > 0) setSimActive(true);
+    }
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
+            {/* Full-screen map */}
+            <MapView
+                center={cityData.center}
+                zoom={cityData.zoom}
+                targetPosition={targetPos}
+                targetName={cityData.target}
+                players={allPlayers}
+                myId={null}
+                trafficState={trafficState}
+                mapTrafficLights={mapTrafficLights}
+                routeWaypoints={routeWaypoints}
+                playerRoutes={playerRoutes}
+                autoFit={true}
+            />
+
+            {/* ── TOP BAR ──────────────────────────────────────────── */}
+            <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 20px',
+                background: 'rgba(4,4,7,0.92)',
+                backdropFilter: 'blur(16px)',
+                borderBottom: '1px solid #1e1e2e',
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <h1 style={{
+                        fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', fontSize: 26, fontWeight: 900,
+                        background: 'linear-gradient(135deg,#fff 30%,#3b82f6 100%)',
+                        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    }}>DARK VELOCITY</h1>
+                    <span style={{ fontSize: 11, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, padding: '3px 10px', color: '#3b82f6', fontWeight: 700, letterSpacing: 1 }}>INSTRUCTOR</span>
+                    <span style={{ fontSize: 12, color: '#52526a', fontWeight: 600 }}>{cityData.name} → {cityData.target}</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <TrafficLight state={trafficState} />
+
+                    {/* Bot simulation panel */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 10, padding: '6px 12px' }}>
+                        <span style={{ fontSize: 12, color: '#a855f7', fontWeight: 700 }}>🤖</span>
+                        <input
+                            type="number" min={0} max={15} value={simBotCount}
+                            onChange={e => setSimBotCount(Math.min(15, Math.max(0, Number(e.target.value))))}
+                            style={{ width: 40, background: '#0d0d14', border: '1px solid #1e1e2e', borderRadius: 6, color: '#e2e2f0', fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 700, padding: '2px 6px', textAlign: 'center', outline: 'none' }}
+                        />
+                        <button onClick={() => setSimActive(s => !s)} style={{
+                            background: simActive ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${simActive ? '#a855f7' : '#1e1e2e'}`,
+                            borderRadius: 7, padding: '5px 12px',
+                            color: simActive ? '#a855f7' : '#e2e2f0', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                        }}>{simActive ? '⏹ STOP' : '▶ SIMULATE'}</button>
+                    </div>
+
+                    {!countdownStarted ? (
+                        <button onClick={handleStart} style={{
+                            background: 'linear-gradient(135deg,#15803d,#22c55e)', border: 'none',
+                            borderRadius: 10, padding: '10px 20px', color: '#fff',
+                            fontWeight: 700, fontSize: 14, letterSpacing: 1, cursor: 'pointer',
+                            boxShadow: '0 4px 20px rgba(34,197,94,0.4)',
+                        }}>🏁 START RACE</button>
+                    ) : (
+                        <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: 10, padding: '10px 20px', color: '#22c55e', fontWeight: 700, fontSize: 14 }}>
+                            {raceStarted ? '🚀 RACE IN PROGRESS' : countdown !== null ? `STARTING IN ${countdown}…` : '✅ STARTED'}
+                        </div>
+                    )}
+
+                    <button onClick={onLeave} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '10px 16px', color: '#ef4444', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>✕ END</button>
+                </div>
+            </div>
+
+            {/* ── BOTTOM LEFT: QR + count ──────────────────────────── */}
+            <div style={{ position: 'absolute', bottom: 24, left: 24, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="glass" style={{ borderRadius: 16, padding: 18, textAlign: 'center' }}>
+                    <div style={{ background: '#fff', borderRadius: 10, padding: 8, display: 'inline-block', marginBottom: 8 }}>
+                        <QRCodeSVG value={joinUrl} size={110} level="M" />
+                    </div>
+                    <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, marginBottom: 2 }}>ROOM · {roomCode}</p>
+                    <p style={{ fontSize: 10, color: '#52526a', letterSpacing: 1 }}>SCAN TO JOIN</p>
+                </div>
+                <div className="glass" style={{ borderRadius: 12, padding: '10px 16px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic' }}>{riderCount}</p>
+                    <p style={{ fontSize: 10, color: '#52526a', letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase' }}>Riders on Map</p>
+                </div>
+            </div>
+
+            {/* ── BOTTOM RIGHT: Leaderboard ────────────────────────── */}
+            <div style={{ position: 'absolute', bottom: 24, right: 24, zIndex: 100 }}>
+                <Leaderboard players={allPlayers.filter(p => p.role !== 'instructor')} myId={null} />
+            </div>
+
+            {/* ── COUNTDOWN ─────────────────────────────────────────── */}
+            {countdown !== null && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: countdown === 0 ? 'transparent' : 'rgba(0,0,0,0.2)' }}>
+                    <div className="countdown-pop" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 240, fontWeight: 900, fontStyle: 'italic', color: countdown === 0 ? '#22c55e' : '#fff', textShadow: countdown === 0 ? '0 0 80px #22c55e' : '0 0 60px rgba(255,255,255,0.4)', lineHeight: 1 }}>
+                        {countdown === 0 ? 'GO!' : countdown}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

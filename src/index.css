@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@layer base {
+    :root {
+        --c-bg: #040407;
+        --c-surface: #0d0d14;
+        --c-surface2: #13131c;
+        --c-border: #1e1e2e;
+        --c-text: #e2e2f0;
+        --c-muted: #52526a;
+        --c-blue: #3b82f6;
+        --c-green: #22c55e;
+        --c-red: #ef4444;
+        --c-yellow: #facc15;
+        --c-orange: #f97316;
+        --c-purple: #a855f7;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html,
+    body,
+    #root {
+        height: 100%;
+        overflow: hidden;
+        background: var(--c-bg);
+        color: var(--c-text);
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    input,
+    select,
+    button {
+        font-family: inherit;
+    }
+}
+
+/* Leaflet dark tile inversion for stencil look */
+.leaflet-tile-pane {
+    filter: saturate(0.25) brightness(0.7);
+}
+
+/* Leaflet containers */
+.leaflet-container {
+    background: #040407 !important;
+}
+
+/* Target tooltip */
+.target-tooltip {
+    background: rgba(10, 10, 18, 0.9) !important;
+    border: 1px solid #22c55e !important;
+    color: #22c55e !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.3) !important;
+}
+
+.target-tooltip::before {
+    display: none !important;
+}
+
+/* Race position tooltip */
+.player-tooltip {
+    background: rgba(10, 10, 18, 0.9) !important;
+    border: 1px solid #3b82f6 !important;
+    color: #fff !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    white-space: nowrap !important;
+}
+
+.player-tooltip::before {
+    display: none !important;
+}
+
+/* Marker pulse animation */
+@keyframes markerPing {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    70% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+.marker-ping {
+    animation: markerPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Countdown overlay font */
+@keyframes countdownPop {
+    0% {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.countdown-pop {
+    animation: countdownPop 0.35s ease-out forwards;
+}
+
+/* Training zone bar */
+.zone-bar-fill {
+    transition: width 0.6s ease, background-color 0.6s ease;
+}
+
+/* Glassmorphism panel */
+.glass {
+    background: rgba(13, 13, 20, 0.88);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e1e2e;
+    border-radius: 2px;
+}
