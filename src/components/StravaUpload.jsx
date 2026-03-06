@@ -42,7 +42,7 @@ export default function StravaUpload({ track = [], riderName = 'Rider', onClose 
         form.append('data_type', 'gpx');
         form.append('activity_type', 'virtualride');
         form.append('name', `Dark Velocity — ${riderName}`);
-        form.append('description', 'Virtual cycle race powered by Dark Velocity 🚴');
+        form.append('description', 'Virtual cycle race powered by Dark Velocity');
 
         try {
             setUploadMsg('Uploading to Strava…');

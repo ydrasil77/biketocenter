@@ -15,7 +15,7 @@ export default function StartScreen({ onChoose }) {
     const cards = [
         {
             id: 'rider',
-            icon: '🚴',
+            icon: <img src="/landing-bike2.png" style={{ height: '52px', objectFit: 'contain' }} alt="Rider" />,
             label: 'RIDER',
             sub: 'Join or watch an ongoing race. Race against bots and other riders.',
             color: '#3b82f6',

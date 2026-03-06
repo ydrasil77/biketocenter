@@ -13,15 +13,21 @@ delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconUrl: '', shadowUrl: '' });
 
 // ── Player label HTML ────────────────────────────────────────
-function playerLabelHtml(name, speed, hr, color, isMe) {
+function playerLabelHtml(name, speed, hr, color, isMe, isZ5) {
     const speedStr = speed > 0 ? `${speed.toFixed(1)}<span style="font-size:9px;opacity:0.7">km/h</span>` : '';
     const hrStr = hr > 0 ? `❤ ${Math.round(hr)}` : '';
     const badge = [speedStr, hrStr].filter(Boolean).join(' · ');
+
+    // Add pulsing flame effect if isZ5 is true
+    const bikeFilter = isZ5
+        ? `drop-shadow(0 -4px 12px rgba(255, 69, 0, 0.9)) drop-shadow(0 0 8px rgba(255, 140, 0, 0.8))`
+        : `drop-shadow(0 0 ${isMe ? 6 : 4}px ${color})`;
+
     return `
     <div style="display:flex;flex-direction:column;align-items:flex-start;pointer-events:none;white-space:nowrap;">
-      <div style="position:relative;width:${isMe ? 20 : 14}px;height:${isMe ? 20 : 14}px;margin-bottom:3px;">
+      <div style="position:relative;width:${isMe ? 40 : 30}px;height:${isMe ? 40 : 30}px;margin-bottom:3px;">
         ${isMe ? `<div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.3;" class="marker-ping"></div>` : ''}
-        <div style="position:absolute;inset:${isMe ? 3 : 2}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.9);box-shadow:0 0 ${isMe ? 12 : 7}px ${color};"></div>
+        <img class="${isZ5 ? 'flame-flicker' : ''}" src="/phantom-bike.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:${bikeFilter}; transition: filter 0.3s;" />
       </div>
       <div style="background:rgba(4,4,7,0.85);border:1px solid ${color};border-radius:5px;padding:2px 7px;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;color:#e2e2f0;line-height:1.45;backdrop-filter:blur(4px);max-width:110px;">
         ${isMe ? '⚡ ' : ''}${name}
@@ -187,9 +193,14 @@ export default function MapView({
         const map = leafletRef.current;
         if (!map || !myPosition) return;
         const [lat, lng] = myPosition;
+        const myWkg = (myHr /* assuming we have hr passed, actually we need to estimate or just check zone */);
+        // MapView is missing 'zone' directly as a prop for 'my', but we can check if it's over Z5 logically if we pass it later. For now let's leave my player without a hardcoded Zone logic unless we pull it from players array.
+        const myPlayerData = players.find(p => p.id === myId);
+        const myZ5 = myPlayerData?.zone === 'Z5' || myPlayerData?.zone === 'Z6';
+
         const icon = L.divIcon({
             className: '',
-            html: playerLabelHtml(myName, mySpeed, myHr, '#3b82f6', true),
+            html: playerLabelHtml(myName, mySpeed, myHr, '#3b82f6', true, myZ5),
             iconSize: [130, 65], iconAnchor: [10, 10],
         });
         if (!myMarkerRef.current) {
@@ -211,11 +222,12 @@ export default function MapView({
         if (!map) return;
         const existing = playerMarkersRef.current;
 
-        players.forEach(({ id, name, position, color = '#f97316', speed = 0, hr = 0 }) => {
+        players.forEach(({ id, name, position, color = '#f97316', speed = 0, hr = 0, zone }) => {
             if (id === myId || !position) return;
+            const isZ5 = zone === 'Z5' || zone === 'Z6';
             const icon = L.divIcon({
                 className: '',
-                html: playerLabelHtml(name, speed, hr, color, false),
+                html: playerLabelHtml(name, speed, hr, color, false, isZ5),
                 iconSize: [120, 60], iconAnchor: [7, 7],
             });
             if (existing[id]) {

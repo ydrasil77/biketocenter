@@ -103,12 +103,8 @@ export default function NavMap({
         myDotRef.current = L.marker(startPos, {
             icon: L.divIcon({
                 className: '',
-                html: `<div style="
-                    width:18px;height:18px;border-radius:50%;
-                    background:#22c55e;border:3px solid #fff;
-                    box-shadow:0 0 0 4px rgba(34,197,94,0.35),0 0 16px rgba(34,197,94,0.9);
-                "></div>`,
-                iconSize: [18, 18], iconAnchor: [9, 9],
+                html: `<img src="/phantom-bike.png" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 6px #22c55e);" />`,
+                iconSize: [36, 36], iconAnchor: [18, 18],
             }),
             zIndexOffset: 2000,
         }).addTo(map);
@@ -218,12 +214,12 @@ export default function NavMap({
             const icon = L.divIcon({
                 className: '',
                 html: `<div style="display:flex;align-items:center;gap:4px;pointer-events:none;">
-                    <div style="width:11px;height:11px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 7px ${color};flex-shrink:0;"></div>
+                    <img src="/phantom-bike.png" style="width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 0 4px ${color});flex-shrink:0;" />
                     <div style="background:rgba(0,0,0,0.85);border:1px solid ${color};border-radius:4px;padding:1px 5px;font-size:9px;color:#fff;white-space:nowrap;font-family:Inter,sans-serif;">
                         <b>${name ?? ''}</b> ${distKm.toFixed(2)} km
                     </div>
                 </div>`,
-                iconSize: [120, 16], iconAnchor: [6, 5],
+                iconSize: [130, 24], iconAnchor: [12, 12],
             });
             if (refs[id]) { refs[id].setLatLng(pos); refs[id].setIcon(icon); }
             else refs[id] = L.marker(pos, { icon, zIndexOffset: 50 }).addTo(map);

@@ -49,6 +49,7 @@ export default function Leaderboard({ players = [], myId }) {
                             background: dotColor, flexShrink: 0,
                         }} />
                         <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: isMe ? '#e2e2f0' : '#a1a1b4' }}>
+                            {i === 0 && <span style={{ marginRight: 4 }} title="Race Leader">👑</span>}
                             {isMe ? '⚡ ' : ''}{p.name}
                         </span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: dotColor, whiteSpace: 'nowrap' }}>

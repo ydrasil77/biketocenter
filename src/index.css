@@ -104,6 +104,23 @@
     animation: markerPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
+/* Flame pulsing animation */
+@keyframes flameFlicker {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 -4px 12px rgba(255, 69, 0, 0.9)) drop-shadow(0 0 8px rgba(255, 140, 0, 0.8));
+    }
+
+    50% {
+        filter: drop-shadow(0 -8px 20px rgba(255, 30, 0, 1)) drop-shadow(0 0 16px rgba(255, 200, 0, 0.9));
+    }
+}
+
+.flame-flicker {
+    animation: flameFlicker 0.4s infinite alternate ease-in-out !important;
+}
+
 /* Countdown overlay font */
 @keyframes countdownPop {
     0% {

@@ -142,8 +142,8 @@ export default function RaceList({ socket, bluetooth, onJoin, onBack }) {
                                         border: `1px solid ${isLive ? 'rgba(34,197,94,0.3)' : 'rgba(59,130,246,0.3)'}`,
                                     }}>{isLive ? '● LIVE' : '⏳ WAITING'}</span>
                                 </div>
-                                <div style={{ fontSize: 12, color: '#52526a', display: 'flex', gap: 16 }}>
-                                    <span>🚴 {room.riderCount ?? 0} riders</span>
+                                <div style={{ fontSize: 12, color: '#52526a', display: 'flex', alignItems: 'center', gap: 16 }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><img src="/landing-bike.png" style={{ height: '1.2em' }} alt="bike" /> {room.riderCount ?? 0} riders</span>
                                     <span>🤖 {room.botCount ?? 0} bots</span>
                                     <span>📏 {room.radiusKm ?? 2} km</span>
                                     <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2a2a3a' }}>#{room.code}</span>

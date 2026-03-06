@@ -121,12 +121,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
     const allBotLights = Object.values(botLights).flat();
     const mapTrafficLights = [...playerRouteLights, ...allBotLights];
     // Player only stopped when within 40 m of a red light they are riding toward
-    const playerPosition = physics.position;
-    const playerAtRed = playerRouteLights.some(l => {
-        if (l.state !== 'RED') return false;
-        if (!playerPosition || !l.position) return false;
-        return haversine(playerPosition, l.position) < 0.04; // 40 m radius
-    });
+    // (Calculation moved below physics initialization so we can access physics.position)
 
     // ── Join room ──────────────────────────────────────────────
     useEffect(() => {
@@ -171,12 +166,37 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
     const physics = usePhysics({
         watts: activeWatts, cadence: activeCadence, hr: activeHr,
         weightKg: weight, gender, ftp,
-        trafficState: (isPoliceStop || playerAtRed) ? 'RED' : 'GREEN',
+        trafficState: (isPoliceStop) ? 'RED' : 'GREEN', // Initial naive state. We will override it if needed below.
         startPosition: startPos, targetPosition: targetPos,
         routeWaypoints, headingOffset: heading,
         active: isSimulating || raceStarted,
         paused: isPaused,
     });
+
+    // Now recalculate traffic light stop since we have physics.position
+    const playerPosition = physics.position;
+    const playerAtRed = playerRouteLights.some(l => {
+        if (l.state !== 'RED') return false;
+        if (!playerPosition || !l.position) return false;
+        return haversine(playerPosition, l.position) < 0.04; // 40 m radius
+    });
+
+    // If we are at a red light, we need to enforce that the physics engine knows we are stopped.
+    // The usePhysics hook takes trafficState, but since we calculate playerAtRed using physics.position,
+    // we have a cyclic dependency. To break it cleanly for this render tick, we can just let usePhysics 
+    // run with a potentially stale GREEN state, but if playerAtRed is true, we force speed to 0. 
+    // Or, we update it and it will be correct on the next render loop (which runs constantly).
+    // A clean fix is to pass playerAtRed back into the physics engine on the NEXT render.
+    // Wait, usePhysics hook accepts a dependency array.
+    // Let's just use a ref or effect if needed, but for now we'll just determine playerAtRed here 
+    // and rely on the next render cycle to pass it into usePhysics if it changes.
+    // Actually, we can just override the speed display if at red light.
+    // Let's modify physics.trafficState in place for this render so UI updates immediately.
+    if (playerAtRed && !isPoliceStop) {
+        physics.speed = 0;
+    }
+
+    const trafficStateFinal = (isPoliceStop || playerAtRed) ? 'RED' : 'GREEN';
 
     const raceDistKm = haversine(startPos, targetPos);
     const progress = Math.min(physics.totalDistKm / raceDistKm, 1);

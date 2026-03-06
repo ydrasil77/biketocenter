@@ -66,7 +66,7 @@ function BtModal({ status, statusMsg, onDismiss }) {
                         fontWeight: 700, fontSize: 14, letterSpacing: 1, cursor: 'pointer',
                         fontFamily: 'Inter, sans-serif',
                     }}>
-                        {isConnected ? 'LETS GO 🚴' : 'TRY AGAIN'}
+                        {isConnected ? <>LETS GO <img src="/landing-bike.png" style={{ height: '1.2em', verticalAlign: 'middle', marginLeft: '6px' }} alt="bike" /></> : 'TRY AGAIN'}
                     </button>
                 )}
             </div>
@@ -86,16 +86,18 @@ const RACE_DISTANCES = [
     { label: '60 km (~2 h)', km: 60 },
 ];
 
-export default function Lobby({ onStart, onBack, bluetooth, initialRole }) {
-    const [role, setRole] = useState(initialRole ?? 'rider');
-    const [name, setName] = useState('Rider 1');
-    const [weight, setWeight] = useState(75);
-    const [gender, setGender] = useState('male');
-    const [city, setCity] = useState('copenhagen');
-    const [ftp, setFtp] = useState(250);
-    const [roomCode, setRoomCode] = useState('');
-    const [botCount, setBotCount] = useState(3);
-    const [distKm, setDistKm] = useState(2);
+export default function Lobby({ onStart, onBack, bluetooth, initialRole, presetConfig }) {
+    const [role, setRole] = useState(presetConfig?.role ?? initialRole ?? 'rider');
+    const [name, setName] = useState(presetConfig?.name ?? 'Rider 1');
+    const [weight, setWeight] = useState(presetConfig?.weight ?? 75);
+    const [gender, setGender] = useState(presetConfig?.gender ?? 'male');
+    const [city, setCity] = useState(presetConfig?.city ?? 'copenhagen');
+    const [ftp, setFtp] = useState(presetConfig?.ftp ?? 250);
+    const [roomCode, setRoomCode] = useState(presetConfig?.roomCode ?? '');
+    const [botCount, setBotCount] = useState(presetConfig?.botCount ?? 3);
+    const [distKm, setDistKm] = useState(presetConfig?.radiusKm ?? 2);
+
+    const isJoiningLive = !!presetConfig?.roomCode;
 
     const { bikeConnected, hrConnected, status, statusMsg, savedDevice, connectBike, quickReconnect, clearSavedDevice } = bluetooth;
     const btConnected = bikeConnected || hrConnected;
@@ -177,14 +179,15 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole }) {
                 {/* Role */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     {['rider', 'instructor'].map(r => (
-                        <button key={r} onClick={() => setRole(r)} style={{
+                        <button key={r} onClick={() => setRole(r)} disabled={isJoiningLive} style={{
                             padding: 12, borderRadius: 10,
                             border: `1px solid ${role === r ? '#3b82f6' : '#1e1e2e'}`,
                             background: role === r ? 'rgba(59,130,246,0.12)' : 'transparent',
                             color: role === r ? '#3b82f6' : '#52526a',
-                            fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                            fontWeight: 700, fontSize: 13, cursor: isJoiningLive ? 'not-allowed' : 'pointer',
+                            opacity: isJoiningLive && role !== r ? 0.4 : 1,
                             fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: 1,
-                        }}>{r === 'rider' ? '🚴 Rider' : '📡 Instructor'}</button>
+                        }}>{r === 'rider' ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><img src="/landing-bike.png" style={{ height: '1.2em' }} alt="bike" /> Rider</span> : '📡 Instructor'}</button>
                     ))}
                 </div>
 
@@ -213,7 +216,7 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole }) {
 
                     <div>
                         <label style={labelStyle}>Race City</label>
-                        <select style={{ ...inputStyle, cursor: 'pointer' }} value={city} onChange={e => setCity(e.target.value)}>
+                        <select disabled={isJoiningLive} style={{ ...inputStyle, cursor: isJoiningLive ? 'not-allowed' : 'pointer', opacity: isJoiningLive ? 0.6 : 1 }} value={city} onChange={e => setCity(e.target.value)}>
                             <option value="copenhagen">🇩🇰 Copenhagen — The Little Mermaid</option>
                             <option value="london">🇬🇧 London — Big Ben</option>
                             <option value="singapore">🇸🇬 Singapore — Marina Bay Sands</option>
@@ -227,13 +230,14 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole }) {
                         <label style={labelStyle}>{role === 'instructor' ? 'Class Duration / Distance' : 'Race Distance / Class Duration'}</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                             {RACE_DISTANCES.map(d => (
-                                <button key={d.km} onClick={() => setDistKm(d.km)} style={{
+                                <button key={d.km} disabled={isJoiningLive} onClick={() => setDistKm(d.km)} style={{
                                     padding: '8px 4px', borderRadius: 8,
                                     border: `1px solid ${distKm === d.km ? '#a855f7' : '#1e1e2e'}`,
                                     background: distKm === d.km ? 'rgba(168,85,247,0.15)' : 'transparent',
                                     color: distKm === d.km ? '#a855f7' : '#52526a',
                                     fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700,
-                                    cursor: 'pointer', textAlign: 'center', lineHeight: 1.4,
+                                    cursor: isJoiningLive ? 'not-allowed' : 'pointer', textAlign: 'center', lineHeight: 1.4,
+                                    opacity: isJoiningLive && distKm !== d.km ? 0.3 : 1
                                 }}>
                                     {d.km} km<br />
                                     <span style={{ fontWeight: 400, opacity: 0.7 }}>{etaLabel(d.km)}</span>

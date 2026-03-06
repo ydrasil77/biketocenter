@@ -51,14 +51,17 @@ export default function App() {
 
     // Rider chose to join a specific race from the list
     function handleJoinRace(config) {
+        setPendingRole('rider');
         setRaceConfig(config);
-        setScreen('race');
+        setScreen('lobby');
     }
 
     // Lobby "Start" button
-    function handleStart(config) {
-        setRaceConfig(config);
-        setScreen(config.role === 'instructor' ? 'instructor' : 'race');
+    function handleStart(lobbyConfig) {
+        // Merge the lobby setup with any pre-existing config (e.g. from RaceList)
+        const finalConfig = { ...raceConfig, ...lobbyConfig };
+        setRaceConfig(finalConfig);
+        setScreen(finalConfig.role === 'instructor' ? 'instructor' : 'race');
     }
 
     // Back / Leave
@@ -90,6 +93,7 @@ export default function App() {
         return (
             <Lobby
                 initialRole={pendingRole}
+                presetConfig={raceConfig}
                 onStart={handleStart}
                 onBack={handleBackToStart}
                 bluetooth={bluetooth}

@@ -112,7 +112,7 @@ export default function Dashboard({
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 {/* Rider info */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 130, flexShrink: 0 }}>
-                    <span style={{ fontSize: 24, filter: isRed ? 'grayscale(1) opacity(0.5)' : 'drop-shadow(0 0 8px rgba(59,130,246,0.6))', transition: 'filter 0.3s' }}>🚴</span>
+                    <img src="/landing-bike.png" alt="Rider" style={{ height: '28px', objectFit: 'contain', filter: isRed ? 'grayscale(1) opacity(0.5)' : 'drop-shadow(0 0 8px rgba(59,130,246,0.6))', transition: 'filter 0.3s' }} />
                     <div>
                         <p style={{ fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: 90, textOverflow: 'ellipsis' }}>{riderName}</p>
                         <p style={{ fontSize: 10, color: '#52526a' }}>{cityName}</p>
