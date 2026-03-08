@@ -5,6 +5,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import MapView from './MapView';
+import MountainProfile from './MountainProfile';
 import TrafficLight from './TrafficLight';
 import Leaderboard, { PLAYER_DOT_COLORS } from './Leaderboard';
 import { CITIES } from '../utils/cities';
@@ -56,7 +57,7 @@ function useInstructorTrafficLights(routeWaypoints, count = 5) {
 }
 
 export default function InstructorView({ config, socket, onLeave }) {
-    const { city, roomCode, radiusKm = 2 } = config;
+    const { city, roomCode, radiusKm = 2, playMode = 'solo', mountainId } = config;
     const cityData = CITIES[city];
     const targetPos = cityData.center;
 
@@ -68,7 +69,7 @@ export default function InstructorView({ config, socket, onLeave }) {
     const [routeWaypoints, setRouteWaypoints] = useState(null);
 
     useEffect(() => {
-        joinRoom(roomCode, { name: 'Instructor', city, role: 'instructor', radiusKm });
+        joinRoom(roomCode, { name: 'Instructor', city, role: 'instructor', radiusKm, playMode, mountainId });
     }, []); // eslint-disable-line
 
     // Fetch route for map + bots
@@ -121,20 +122,24 @@ export default function InstructorView({ config, socket, onLeave }) {
 
     return (
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
-            {/* Full-screen map */}
-            <MapView
-                center={cityData.center}
-                zoom={cityData.zoom}
-                targetPosition={targetPos}
-                targetName={cityData.target}
-                players={allPlayers}
-                myId={null}
-                trafficState={trafficState}
-                mapTrafficLights={mapTrafficLights}
-                routeWaypoints={routeWaypoints}
-                playerRoutes={playerRoutes}
-                autoFit={true}
-            />
+            {/* Full-screen map or Mountain Profile */}
+            {playMode === 'mountain' ? (
+                <MountainProfile mountainId={mountainId} players={allPlayers} />
+            ) : (
+                <MapView
+                    center={cityData.center}
+                    zoom={cityData.zoom}
+                    targetPosition={targetPos}
+                    targetName={cityData.target}
+                    players={allPlayers}
+                    myId={null}
+                    trafficState={trafficState}
+                    mapTrafficLights={mapTrafficLights}
+                    routeWaypoints={routeWaypoints}
+                    playerRoutes={playerRoutes}
+                    autoFit={true}
+                />
+            )}
 
             {/* ── TOP BAR ──────────────────────────────────────────── */}
             <div style={{

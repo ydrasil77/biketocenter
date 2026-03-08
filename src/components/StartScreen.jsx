@@ -31,6 +31,15 @@ export default function StartScreen({ onChoose }) {
             glow: 'rgba(168,85,247,0.4)',
             border: 'rgba(168,85,247,0.5)',
         },
+        {
+            id: 'arcade',
+            icon: '🏆',
+            label: 'LEADERBOARD',
+            sub: 'View the global arcade high scores from all riders.',
+            color: '#facc15',
+            glow: 'rgba(250,204,21,0.4)',
+            border: 'rgba(250,204,21,0.5)',
+        },
     ];
 
     return (

@@ -4,6 +4,7 @@
 // Each bot starts immediately (no race-start gate).
 // ============================================================
 import fetch from 'node-fetch';
+import { getMountainGrade } from '../src/utils/mountains.js';
 
 const ROOMS = new Map();
 export { ROOMS };
@@ -45,11 +46,27 @@ async function fetchOsrmRoute(start, end) {
 }
 
 // ── Speed from W/kg ───────────────────────────────────────────
-function wkgToSpeed(wkg, weight, stopped) {
+function wkgToSpeed(wkg, weight, stopped, grade = 0) {
     if (stopped) return 0;
     const P = wkg * weight;
+    const m = weight + 9;
+    const CdA = 0.405, rho = 1.225, Crr = 0.004, g = 9.81;
+
+    const Fgravity = m * g * Math.sin(Math.atan(grade));
+    if (P <= 0 && Fgravity >= 0) return 0;
+
     let v = 8;
-    for (let i = 0; i < 40; i++) { const Pv = (0.5 * 0.405 * 1.225 * v * v + 0.004 * (weight + 9) * 9.81) * v; const dP = 3 * 0.5 * 0.405 * 1.225 * v * v + 0.004 * (weight + 9) * 9.81; v -= (Pv - P) / dP; if (v < 0) { v = 0; break; } }
+    for (let i = 0; i < 40; i++) {
+        const Fdrag = 0.5 * CdA * rho * v * v;
+        const Froll = Crr * m * g;
+        const Ftotal = Fdrag + Froll + Fgravity;
+        const Pv = Ftotal * v;
+        const dPdv = 1.5 * CdA * rho * v * v + Froll + Fgravity;
+
+        if (Math.abs(dPdv) < 0.01) break;
+        v -= (Pv - P) / dPdv;
+        if (v < 0) { v = 0; break; }
+    }
     return v * 3.6;
 }
 
@@ -111,6 +128,9 @@ async function addBots(roomCode, count, io) {
         pos[0] += (Math.random() - 0.5) * 0.0008;
         pos[1] += (Math.random() - 0.5) * 0.0008;
 
+        const isTeamMode = room.playMode === 'team';
+        const teamAssigned = isTeamMode ? (profile.wkg >= 4.0 ? 'A' : profile.wkg >= 3.2 ? 'B' : profile.wkg >= 2.5 ? 'C' : 'D') : null;
+
         room.bots.set(botId, {
             id: botId, name, isBot: true,
             position: pos,
@@ -121,6 +141,7 @@ async function addBots(roomCode, count, io) {
             wkg: profile.wkg,
             weight: profile.weight,
             zone: 'Z2', role: 'rider',
+            team: teamAssigned,
             arrived: false, policeStopUntil: 0,
             wpIndex: startIdx,   // current waypoint cursor
         });
@@ -153,7 +174,8 @@ function startBotLoop(roomCode, io) {
             const liveWkg = bot.wkg + 0.3 * Math.sin(t * 0.2 + bot.id.length);
             bot.watts = Math.round(liveWkg * bot.weight);
             bot.hr = Math.round(140 + 15 * (liveWkg / 4) + 5 * Math.sin(t * 0.1));
-            bot.speed = wkgToSpeed(liveWkg, bot.weight, stopped);
+            const grade = r.playMode === 'mountain' ? getMountainGrade(r.mountainId, bot.distKm) : 0;
+            bot.speed = wkgToSpeed(liveWkg, bot.weight, stopped, grade);
             const ftpPct = liveWkg / (bot.wkg * 1.05);
             bot.zone = ftpPct < 0.65 ? 'Z1' : ftpPct < 0.75 ? 'Z2' : ftpPct < 0.87 ? 'Z3' : ftpPct < 1.0 ? 'Z4' : 'Z5';
 

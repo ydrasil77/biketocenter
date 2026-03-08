@@ -8,6 +8,7 @@ import RaceList from './components/RaceList';
 import Lobby from './components/Lobby';
 import RaceView from './components/RaceView';
 import InstructorView from './components/InstructorView';
+import GlobalLeaderboard from './components/GlobalLeaderboard';
 import { useBluetooth } from './hooks/useBluetooth';
 import { useSocket } from './hooks/useSocket';
 
@@ -44,8 +45,10 @@ export default function App() {
         setPendingRole(role);
         if (role === 'rider') {
             setScreen('race-list');      // riders → see ongoing races first
-        } else {
+        } else if (role === 'instructor') {
             setScreen('lobby');          // instructors → straight to config
+        } else if (role === 'arcade') {
+            setScreen('arcade');         // global leaderboard
         }
     }
 
@@ -65,8 +68,9 @@ export default function App() {
     }
 
     // Back / Leave
-    function handleLeave() {
-        setScreen('start');
+    function handleLeave(targetParam) {
+        const nextScreen = typeof targetParam === 'string' ? targetParam : 'start';
+        setScreen(nextScreen);
         setRaceConfig(null);
         setPendingRole(null);
     }
@@ -87,6 +91,10 @@ export default function App() {
                 onBack={() => setScreen('start')}
             />
         );
+    }
+
+    if (screen === 'arcade') {
+        return <GlobalLeaderboard onBack={handleBackToStart} />;
     }
 
     if (screen === 'lobby') {

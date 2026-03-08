@@ -56,6 +56,38 @@ app.get('/auth/strava/callback', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────
+// GLOBAL ARCADE LEADERBOARD
+// ─────────────────────────────────────────────────
+const ARCADE_LEADERBOARD = new Map(); // Tracking best efforts of real players by name
+
+function updateArcadeLeaderboard(player) {
+    if (!player || player.role === 'instructor' || player.isBot) return;
+
+    // Use name as the unique key for the arcade feel (like entering initials)
+    const name = player.name && player.name.trim() !== '' ? player.name.trim().toUpperCase() : 'UNKNOWN RIDER';
+    const wkg = player.watts && player.weight ? player.watts / player.weight : 0;
+
+    if (!ARCADE_LEADERBOARD.has(name)) {
+        ARCADE_LEADERBOARD.set(name, {
+            name,
+            maxSpeed: player.speed || 0,
+            maxWkg: wkg,
+            totalDistKm: player.distKm || 0,
+            lastSeen: Date.now()
+        });
+    } else {
+        const entry = ARCADE_LEADERBOARD.get(name);
+        entry.maxSpeed = Math.max(entry.maxSpeed, player.speed || 0);
+        entry.maxWkg = Math.max(entry.maxWkg, wkg);
+
+        // If distKm wrapped around (new race), we'd want to handle that, but for simplicity
+        // in an arcade DB just storing the longest single ride distance achieved under that name
+        entry.totalDistKm = Math.max(entry.totalDistKm, player.distKm || 0);
+        entry.lastSeen = Date.now();
+    }
+}
+
+// ─────────────────────────────────────────────────
 // SOCKET.IO — MULTIPLAYER
 // ─────────────────────────────────────────────────
 const CITY_CENTERS = {
@@ -102,23 +134,35 @@ io.on('connection', (socket) => {
                 botCount: bots.size,
                 raceStarted: room.raceStarted ?? false,
                 radiusKm: room.radiusKm ?? 2,
+                playMode: room.playMode ?? 'solo',
+                mountainId: room.mountainId ?? null,
             });
         }
         socket.emit('room_list', list);
     });
 
+    // ── GET_ARCADE_LEADERBOARD ─────────────────────────────────
+    socket.on('get_arcade_leaderboard', () => {
+        const sorted = Array.from(ARCADE_LEADERBOARD.values())
+            .sort((a, b) => b.totalDistKm - a.totalDistKm) // Sort by most distance travelled
+            .slice(0, 15); // Top 15
+        socket.emit('arcade_leaderboard', sorted);
+    });
+
     // ── JOIN_ROOM: now includes radiusKm and botCount ──────────
-    socket.on('JOIN_ROOM', ({ roomCode, name, city, role, ftp, radiusKm = 2, botCount = 0 }) => {
+    socket.on('JOIN_ROOM', ({ roomCode, name, city, role, ftp, radiusKm = 2, botCount = 0, playMode = 'solo', team = null, mountainId = null }) => {
         if (currentRoom) socket.leave(currentRoom);
         currentRoom = roomCode;
         socket.join(roomCode);
 
         const room = getRoom(roomCode);
 
-        // Store city + radius in room for bot loop reference
+        // Store city + radius + mode in room for bot loop reference
         if (!room.city || room.players.size === 0) {
             room.city = city ?? 'copenhagen';
             room.radiusKm = radiusKm;
+            room.playMode = playMode;
+            room.mountainId = mountainId;
         }
 
         const center = CITY_CENTERS[room.city] ?? CITY_CENTERS.copenhagen;
@@ -134,6 +178,7 @@ io.on('connection', (socket) => {
         room.players.set(socket.id, {
             id: socket.id, name: name ?? 'Rider', city, role, ftp,
             position: startPos, distKm: 0, speed: 0, hr: 0, watts: 0, zone: 'Z0',
+            team: room.playMode === 'team' ? team : null,
         });
 
         scheduleLight(roomCode, io);
@@ -181,6 +226,7 @@ io.on('connection', (socket) => {
             });
         }
 
+        updateArcadeLeaderboard(player);
         broadcastPlayerList(currentRoom, io);
     });
 

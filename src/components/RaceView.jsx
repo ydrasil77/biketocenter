@@ -5,12 +5,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import NavMap from './NavMap';
 import Dashboard from './Dashboard';
 import TrafficLight from './TrafficLight';
-import Leaderboard, { PLAYER_DOT_COLORS } from './Leaderboard';
+import Leaderboard, { PLAYER_DOT_COLORS, TEAM_COLORS } from './Leaderboard';
 import StravaUpload from './StravaUpload';
 import { usePhysics } from '../hooks/usePhysics';
 import { useBots } from '../hooks/useBots';
 import { CITIES, haversine, calcStartPositions } from '../utils/cities';
 import { fetchStreetRoute, sampleRoutePositions } from '../utils/routing';
+import { getMountainGrade } from '../utils/mountains';
 
 // ── Per-route traffic lights (client-side) ───────────────────
 function useMapTrafficLights(routeWaypoints, count = 5) {
@@ -56,7 +57,7 @@ function useMapTrafficLights(routeWaypoints, count = 5) {
 }
 
 export default function RaceView({ config, bluetooth, socket, onLeave }) {
-    const { name, weight, gender, city, ftp, roomCode, radiusKm = 2, botCount = 0 } = config;
+    const { name, weight, gender, city, ftp, roomCode, radiusKm = 2, botCount = 0, team = null, playMode = 'solo', mountainId = null } = config;
     const cityData = CITIES[city];
     const targetPos = cityData.center;
 
@@ -125,7 +126,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
 
     // ── Join room ──────────────────────────────────────────────
     useEffect(() => {
-        joinRoom(roomCode, { name, city, role: 'rider', ftp, radiusKm, botCount: 0 });
+        joinRoom(roomCode, { name, city, role: 'rider', ftp, radiusKm, botCount: 0, playMode, team });
     }, []); // eslint-disable-line
 
     // ── Police stop countdown ──────────────────────────────────
@@ -169,6 +170,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
         trafficState: (isPoliceStop) ? 'RED' : 'GREEN', // Initial naive state. We will override it if needed below.
         startPosition: startPos, targetPosition: targetPos,
         routeWaypoints, headingOffset: heading,
+        mountainId: playMode === 'mountain' ? mountainId : null,
         active: isSimulating || raceStarted,
         paused: isPaused,
     });
@@ -198,9 +200,11 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
 
     const trafficStateFinal = (isPoliceStop || playerAtRed) ? 'RED' : 'GREEN';
 
-    const raceDistKm = haversine(startPos, targetPos);
+    const raceDistKm = playMode === 'mountain' ? radiusKm : haversine(startPos, targetPos);
     const progress = Math.min(physics.totalDistKm / raceDistKm, 1);
     const distLeft = Math.max(raceDistKm - physics.totalDistKm, 0);
+
+    const currentGrade = playMode === 'mountain' ? getMountainGrade(mountainId, physics.totalDistKm) : 0;
 
     // ── Broadcast position ─────────────────────────────────────
     useEffect(() => {
@@ -221,17 +225,30 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
     // ── Players list ───────────────────────────────────────────
     const serverOthers = serverPlayers
         .filter(p => p.id !== socket.socketId)
-        .map((p, i) => ({ ...p, color: PLAYER_DOT_COLORS[i % PLAYER_DOT_COLORS.length] }));
-    const allOtherPlayers = [...serverOthers, ...botPlayers];
+        .map((p, i) => ({ ...p, color: p.team ? TEAM_COLORS[p.team] : PLAYER_DOT_COLORS[i % PLAYER_DOT_COLORS.length] }));
+    const allOtherPlayers = [...serverOthers, ...botPlayers.map(b => ({ ...b, color: b.team ? TEAM_COLORS[b.team] : b.color }))];
 
     // Sorted leaderboard — includes me
     const myEntry = {
         id: socket.socketId ?? 'me',
-        name, distKm: physics.totalDistKm, speed: physics.speed, color: '#3b82f6',
+        name, distKm: physics.totalDistKm, speed: physics.speed, team, color: team ? TEAM_COLORS[team] : '#3b82f6',
     };
     const allPlayers = [myEntry, ...allOtherPlayers]
         .sort((a, b) => (b.distKm ?? 0) - (a.distKm ?? 0));
     const myRank = allPlayers.findIndex(p => p.id === myEntry.id) + 1;
+
+    let myTeamRank = null;
+    let totalTeams = 0;
+    if (team) {
+        const scores = allPlayers.reduce((acc, p) => {
+            if (p.team) acc[p.team] = (acc[p.team] || 0) + (p.distKm || 0);
+            return acc;
+        }, {});
+        const teamScores = Object.entries(scores).map(([t, dist]) => ({ team: t, dist })).sort((a, b) => b.dist - a.dist);
+        myTeamRank = teamScores.findIndex(t => t.team === team) + 1;
+        totalTeams = teamScores.length;
+    }
+
     const wkg = activeWatts > 0 && weight > 0 ? (activeWatts / weight).toFixed(2) : '—';
 
     // ── Direction controls ─────────────────────────────────────
@@ -295,14 +312,27 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                 </div>
 
                 {/* Leaderboard rank pill */}
-                <div style={{
-                    background: myRank === 1 ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${myRank === 1 ? '#eab308' : '#1e1e2e'}`,
-                    borderRadius: 99, padding: '3px 10px', flexShrink: 0,
-                    fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                    fontSize: 13, fontWeight: 900, color: myRank === 1 ? '#000' : '#e2e2f0',
-                }}>
-                    {myRank === 1 ? '🏆' : `#${myRank}`}/{allPlayers.length}
+                <div style={{ display: 'flex', gap: 6 }}>
+                    {team && myTeamRank && (
+                        <div style={{
+                            background: `rgba(255,255,255,0.05)`,
+                            border: `1px solid ${TEAM_COLORS[team]}`,
+                            borderRadius: 99, padding: '3px 10px', flexShrink: 0,
+                            fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
+                            fontSize: 13, fontWeight: 900, color: TEAM_COLORS[team],
+                        }}>
+                            TEAM {team} · {myTeamRank === 1 ? '🏆' : `#${myTeamRank}`}/{totalTeams}
+                        </div>
+                    )}
+                    <div style={{
+                        background: myRank === 1 ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${myRank === 1 ? '#eab308' : '#1e1e2e'}`,
+                        borderRadius: 99, padding: '3px 10px', flexShrink: 0,
+                        fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
+                        fontSize: 13, fontWeight: 900, color: myRank === 1 ? '#000' : '#e2e2f0',
+                    }}>
+                        {myRank === 1 ? '🏆' : `#${myRank}`}/{allPlayers.length}
+                    </div>
                 </div>
             </div>
 
@@ -389,7 +419,19 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                 paddingTop: 36, paddingBottom: 16, paddingLeft: 16, paddingRight: 16,
             }}>
                 {/* Rank badge */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
+                    {team && myTeamRank && (
+                        <div style={{
+                            background: 'rgba(255,255,255,0.07)',
+                            border: `1px solid ${TEAM_COLORS[team]}`,
+                            borderRadius: 99, padding: '4px 18px',
+                            fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
+                            fontSize: 16, fontWeight: 900, color: TEAM_COLORS[team],
+                            letterSpacing: 1,
+                        }}>
+                            TEAM {team} {myTeamRank === 1 ? '🏆' : myTeamRank === 2 ? '🥈' : myTeamRank === 3 ? '🥉' : `#${myTeamRank}`} of {totalTeams}
+                        </div>
+                    )}
                     <div style={{
                         background: myRank === 1 ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'rgba(255,255,255,0.07)',
                         border: `1px solid ${myRank === 1 ? '#eab308' : '#1e1e2e'}`,
@@ -403,12 +445,13 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                 </div>
 
                 {/* Main metrics row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: playMode === 'mountain' ? '1fr 1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 6 }}>
                     {[
                         { label: 'SPEED', value: `${Math.round(isPoliceStop ? 0 : physics.speed)}`, unit: 'km/h', color: '#22c55e', big: true },
                         { label: 'POWER', value: `${Math.round(activeWatts)}`, unit: 'W', color: '#f97316', big: false },
                         { label: 'W/KG', value: wkg, unit: 'w/kg', color: '#a855f7', big: false },
                         { label: 'HR', value: activeHr > 0 ? Math.round(activeHr) : '—', unit: 'bpm', color: '#ef4444', big: false },
+                        ...(playMode === 'mountain' ? [{ label: 'INCLINE', value: `${(currentGrade * 100).toFixed(1)}`, unit: '%', color: '#3b82f6', big: false }] : []),
                     ].map(m => (
                         <div key={m.label} style={{
                             background: 'rgba(255,255,255,0.04)', border: '1px solid #1e1e2e',
@@ -466,7 +509,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
 
             {/* ── STRAVA MODAL ─────────────────────────────────── */}
             {showStrava && (
-                <StravaUpload track={physics.track} riderName={name} onClose={() => { setShowStrava(false); onLeave(); }} />
+                <StravaUpload track={physics.track} riderName={name} onClose={() => { setShowStrava(false); onLeave('arcade'); }} />
             )}
         </div>
     );

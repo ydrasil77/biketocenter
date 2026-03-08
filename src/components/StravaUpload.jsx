@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { buildGPX, downloadGPX } from '../utils/gpx';
 
 const STRAVA_CLIENT_ID = import.meta.env.VITE_STRAVA_CLIENT_ID ?? '';
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `http://${window.location.hostname}:3001`;
 
 export default function StravaUpload({ track = [], riderName = 'Rider', onClose }) {
     const [uploadState, setUploadState] = useState('idle'); // idle | uploading | done | error

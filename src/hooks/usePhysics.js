@@ -5,6 +5,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { calcSpeed, getZone, calcCalories } from '../utils/physics';
 import { haversine } from '../utils/cities';
+import { getMountainGrade } from '../utils/mountains';
 
 const RECORD_INTERVAL_MS = 2000;
 
@@ -44,6 +45,7 @@ export function usePhysics({
     targetPosition,
     routeWaypoints = null, // [lat,lng][] from OSRM — if null, go straight
     headingOffset = 0,     // degrees L/R override (-ve = left, +ve = right)
+    mountainId = null,     // ID of mountain if in mountain mode
     active,
     paused,
 }) {
@@ -106,7 +108,8 @@ export function usePhysics({
             lastTimeRef.current = timestamp;
 
             if (!paused) {
-                const spd = calcSpeed(watts, weightKg, gender, trafficState);
+                const grade = getMountainGrade(mountainId, distRef.current);
+                const spd = calcSpeed(watts, weightKg, gender, trafficState, grade);
                 setSpeed(spd);
                 setZone(getZone(watts, ftp));
                 setCalories(calcCalories(watts, elapsedRef.current));
@@ -168,7 +171,7 @@ export function usePhysics({
             cancelAnimationFrame(rafRef.current);
             lastTimeRef.current = null;
         };
-    }, [active, paused, watts, hr, cadence, weightKg, gender, ftp, trafficState, targetPosition]);
+    }, [active, paused, watts, hr, cadence, weightKg, gender, ftp, trafficState, targetPosition, mountainId]);
 
     const resetTrack = useCallback(() => {
         setTrack([]);

@@ -59,6 +59,7 @@ export default function RaceList({ socket, bluetooth, onJoin, onBack }) {
             radiusKm: room.radiusKm ?? 2,
             name: 'Rider',
             weight: 75, gender: 'male', ftp: 250, botCount: 0,
+            playMode: room.playMode ?? 'solo',
         });
     }
 

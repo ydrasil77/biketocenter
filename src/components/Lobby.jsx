@@ -3,6 +3,7 @@
 // ============================================================
 import { useState, useEffect } from 'react';
 import { CITIES } from '../utils/cities';
+import { MOUNTAINS } from '../utils/mountains';
 
 // BT Connection Modal: full-screen overlay while scanning / connecting
 function BtModal({ status, statusMsg, onDismiss }) {
@@ -77,6 +78,13 @@ function BtModal({ status, statusMsg, onDismiss }) {
     );
 }
 
+const TEAMS = [
+    { id: 'A', name: 'Team A (Pro)', minWkg: 4.0, maxWkg: 9.9, color: '#eab308' },  // Yellow
+    { id: 'B', name: 'Team B (Elite)', minWkg: 3.2, maxWkg: 3.99, color: '#3b82f6' }, // Blue
+    { id: 'C', name: 'Team C (Sport)', minWkg: 2.5, maxWkg: 3.19, color: '#22c55e' }, // Green
+    { id: 'D', name: 'Team D (Base)', minWkg: 0, maxWkg: 2.49, color: '#a855f7' }   // Purple
+];
+
 const RACE_DISTANCES = [
     { label: '2 km  (~5–10 min)', km: 2 },
     { label: '5 km  (~10–20 min)', km: 5 },
@@ -96,6 +104,9 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole, presetC
     const [roomCode, setRoomCode] = useState(presetConfig?.roomCode ?? '');
     const [botCount, setBotCount] = useState(presetConfig?.botCount ?? 3);
     const [distKm, setDistKm] = useState(presetConfig?.radiusKm ?? 2);
+    const [playMode, setPlayMode] = useState(presetConfig?.playMode ?? 'solo'); // 'solo', 'team', 'mountain'
+    const [team, setTeam] = useState(presetConfig?.team ?? null); // 'A', 'B', 'C', 'D'
+    const [mountainId, setMountainId] = useState(presetConfig?.mountainId ?? 'alpe_dhuez');
 
     const isJoiningLive = !!presetConfig?.roomCode;
 
@@ -126,8 +137,25 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole, presetC
             ? `${city.toUpperCase().slice(0, 3)}_${Math.floor(1000 + Math.random() * 9000)}`
             : (roomCode.trim() || `${city.toUpperCase().slice(0, 3)}_${Math.floor(1000 + Math.random() * 9000)}`);
 
-        onStart({ role, name, weight: Number(weight), gender, city, ftp: Number(ftp), roomCode: generatedRoom, botCount: Number(botCount), radiusKm: distKm });
+        const activeRadius = playMode === 'mountain' ? MOUNTAINS[mountainId].totalDistKm : distKm;
+        onStart({
+            role, name, weight: Number(weight), gender, city, ftp: Number(ftp), roomCode: generatedRoom,
+            botCount: Number(botCount), radiusKm: activeRadius, playMode,
+            team: playMode === 'team' ? team : null, mountainId: playMode === 'mountain' ? mountainId : null
+        });
     }
+
+    // Helper for Watt/kg
+    const wkg = ftp > 0 && weight > 0 ? (ftp / weight).toFixed(2) : 0;
+
+    useEffect(() => {
+        if (playMode === 'team' && role === 'rider') {
+            const recommended = TEAMS.find(t => wkg >= t.minWkg && wkg <= t.maxWkg) || TEAMS[3];
+            if (team !== recommended.id) {
+                setTeam(recommended.id);
+            }
+        }
+    }, [wkg, playMode, role]);
 
     const inputStyle = {
         background: '#040407', border: '1px solid #1e1e2e', borderRadius: 10,
@@ -193,6 +221,26 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole, presetC
 
                 {/* Fields — city and distance always shown */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Common Fields: Play Mode */}
+                    <div>
+                        <label style={labelStyle}>Play Mode</label>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            {['solo', 'team', 'mountain'].map(m => (
+                                <button key={m} onClick={() => setPlayMode(m)} disabled={isJoiningLive} style={{
+                                    flex: 1, padding: '10px 0', borderRadius: 8,
+                                    border: `1px solid ${playMode === m ? '#3b82f6' : '#1e1e2e'}`,
+                                    background: playMode === m ? 'rgba(59,130,246,0.15)' : 'transparent',
+                                    color: playMode === m ? '#3b82f6' : '#52526a',
+                                    fontWeight: 700, fontSize: 12, cursor: isJoiningLive ? 'not-allowed' : 'pointer',
+                                    opacity: isJoiningLive && playMode !== m ? 0.4 : 1,
+                                    fontFamily: 'Inter, sans-serif', textTransform: 'uppercase',
+                                }}>
+                                    {m}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Rider-only fields */}
                     {role === 'rider' && (<>
                         <div>
@@ -212,51 +260,105 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole, presetC
                                 </select>
                             </div>
                         </div>
-                    </>)}
 
-                    <div>
-                        <label style={labelStyle}>Race City</label>
-                        <select disabled={isJoiningLive} style={{ ...inputStyle, cursor: isJoiningLive ? 'not-allowed' : 'pointer', opacity: isJoiningLive ? 0.6 : 1 }} value={city} onChange={e => setCity(e.target.value)}>
-                            <option value="copenhagen">🇩🇰 Copenhagen — The Little Mermaid</option>
-                            <option value="london">🇬🇧 London — Big Ben</option>
-                            <option value="singapore">🇸🇬 Singapore — Marina Bay Sands</option>
-                            <option value="paris">🇫🇷 Paris — Eiffel Tower</option>
-                            <option value="tokyo">🇯🇵 Tokyo — Tokyo Tower</option>
-                        </select>
-                    </div>
-
-                    {/* Race distance — both roles */}
-                    <div>
-                        <label style={labelStyle}>{role === 'instructor' ? 'Class Duration / Distance' : 'Race Distance / Class Duration'}</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                            {RACE_DISTANCES.map(d => (
-                                <button key={d.km} disabled={isJoiningLive} onClick={() => setDistKm(d.km)} style={{
-                                    padding: '8px 4px', borderRadius: 8,
-                                    border: `1px solid ${distKm === d.km ? '#a855f7' : '#1e1e2e'}`,
-                                    background: distKm === d.km ? 'rgba(168,85,247,0.15)' : 'transparent',
-                                    color: distKm === d.km ? '#a855f7' : '#52526a',
-                                    fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700,
-                                    cursor: isJoiningLive ? 'not-allowed' : 'pointer', textAlign: 'center', lineHeight: 1.4,
-                                    opacity: isJoiningLive && distKm !== d.km ? 0.3 : 1
-                                }}>
-                                    {d.km} km<br />
-                                    <span style={{ fontWeight: 400, opacity: 0.7 }}>{etaLabel(d.km)}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Rider-only: FTP, bots, room code */}
-                    {role === 'rider' && (<>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
                             <div>
                                 <label style={labelStyle}>FTP (W)</label>
                                 <input style={inputStyle} type="number" value={ftp} onChange={e => setFtp(e.target.value)} />
+                                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, fontFamily: 'Inter,sans-serif' }}>
+                                    Current: <strong style={{ color: '#fff' }}>{wkg} W/kg</strong>
+                                </div>
                             </div>
+                        </div>
+
+                        {/* Auto-Assigned Team Display */}
+                        {playMode === 'team' && (
+                            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid #1e1e2e', borderRadius: 12, padding: 16 }}>
+                                <label style={labelStyle}>Assigned Team (Based on Watt/kg)</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                                    {TEAMS.map(t => {
+                                        const isSelected = team === t.id;
+                                        return (
+                                            <div key={t.id} style={{
+                                                padding: '10px 8px', borderRadius: 10,
+                                                border: `1px solid ${isSelected ? t.color : '#1e1e2e'}`,
+                                                background: isSelected ? `${t.color}20` : 'rgba(0,0,0,0.2)',
+                                                color: isSelected ? '#fff' : '#94a3b8',
+                                                fontFamily: 'Inter,sans-serif', textAlign: 'left',
+                                                opacity: isSelected ? 1 : 0.4,
+                                                display: 'flex', flexDirection: 'column', gap: 2,
+                                                position: 'relative', overflow: 'hidden'
+                                            }}>
+                                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: t.color }} />
+                                                <div style={{ paddingLeft: 6, fontSize: 13, fontWeight: 700, color: t.color }}>{t.name}</div>
+                                                <div style={{ paddingLeft: 6, fontSize: 10, color: '#52526a' }}>
+                                                    {t.id === 'A' ? '> 4.0' : t.id === 'B' ? '3.2 - 3.9' : t.id === 'C' ? '2.5 - 3.1' : '< 2.5'} W/kg
+                                                </div>
+                                                {isSelected && (
+                                                    <div style={{ position: 'absolute', top: 6, right: 6, background: '#22c55e', color: '#000', fontSize: 8, padding: '2px 4px', borderRadius: 4, fontWeight: 800 }}>
+                                                        ACTIVE
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </>)}
+
+                    {playMode === 'mountain' ? (
+                        <div>
+                            <label style={labelStyle}>Select Mountain</label>
+                            <select disabled={isJoiningLive} style={{ ...inputStyle, cursor: isJoiningLive ? 'not-allowed' : 'pointer', opacity: isJoiningLive ? 0.6 : 1 }} value={mountainId} onChange={e => setMountainId(e.target.value)}>
+                                {Object.values(MOUNTAINS).map(m => (
+                                    <option key={m.id} value={m.id}>{m.country.toUpperCase() === 'FRANCE' ? '🇫🇷' : '🇮🇹'} {m.name} — {m.totalDistKm} km</option>
+                                ))}
+                            </select>
+                        </div>
+                    ) : (
+                        <div>
+                            <label style={labelStyle}>Race City</label>
+                            <select disabled={isJoiningLive} style={{ ...inputStyle, cursor: isJoiningLive ? 'not-allowed' : 'pointer', opacity: isJoiningLive ? 0.6 : 1 }} value={city} onChange={e => setCity(e.target.value)}>
+                                <option value="copenhagen">🇩🇰 Copenhagen — The Little Mermaid</option>
+                                <option value="london">🇬🇧 London — Big Ben</option>
+                                <option value="singapore">🇸🇬 Singapore — Marina Bay Sands</option>
+                                <option value="paris">🇫🇷 Paris — Eiffel Tower</option>
+                                <option value="tokyo">🇯🇵 Tokyo — Tokyo Tower</option>
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Race distance — both roles. Hidden if mountain mode */}
+                    {playMode !== 'mountain' && (
+                        <div>
+                            <label style={labelStyle}>{role === 'instructor' ? 'Class Duration / Distance' : 'Race Distance / Class Duration'}</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                                {RACE_DISTANCES.map(d => (
+                                    <button key={d.km} disabled={isJoiningLive} onClick={() => setDistKm(d.km)} style={{
+                                        padding: '8px 4px', borderRadius: 8,
+                                        border: `1px solid ${distKm === d.km ? '#a855f7' : '#1e1e2e'}`,
+                                        background: distKm === d.km ? 'rgba(168,85,247,0.15)' : 'transparent',
+                                        color: distKm === d.km ? '#a855f7' : '#52526a',
+                                        fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700,
+                                        cursor: isJoiningLive ? 'not-allowed' : 'pointer', textAlign: 'center', lineHeight: 1.4,
+                                        opacity: isJoiningLive && distKm !== d.km ? 0.3 : 1
+                                    }}>
+                                        {d.km} km<br />
+                                        <span style={{ fontWeight: 400, opacity: 0.7 }}>{etaLabel(d.km)}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Rider-only: FTP, bots, room code */}
+                    {role === 'rider' && (<>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
                             <div>
                                 <label style={labelStyle}>🤖 AI Bots (0–15)</label>
                                 <input style={inputStyle} type="number" min={0} max={15} value={botCount} onChange={e => setBotCount(Math.min(15, Math.max(0, Number(e.target.value))))} />
-                                <p style={{ fontSize: 10, color: '#52526a', marginTop: 3 }}>Bots race with live speeds + HR</p>
+                                <p style={{ fontSize: 10, color: '#52526a', marginTop: 3 }}>Bots race with live speeds + HR. In Team mode, bots are assigned to teams.</p>
                             </div>
                         </div>
                         <div>
