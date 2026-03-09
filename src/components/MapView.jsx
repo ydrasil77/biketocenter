@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({ iconUrl: '', shadowUrl: '' });
 
 // ── Player label HTML ────────────────────────────────────────
 function playerLabelHtml(name, speed, hr, color, isMe, isZ5) {
-    const speedStr = speed > 0 ? `${speed.toFixed(1)}<span style="font-size:9px;opacity:0.7">km/h</span>` : '';
+    const speedStr = speed > 0 ? `${speed.toFixed(1)}<span style="font-size:12px;opacity:0.7">km/h</span>` : '';
     const hrStr = hr > 0 ? `❤ ${Math.round(hr)}` : '';
     const badge = [speedStr, hrStr].filter(Boolean).join(' · ');
 
@@ -25,13 +25,13 @@ function playerLabelHtml(name, speed, hr, color, isMe, isZ5) {
 
     return `
     <div style="display:flex;flex-direction:column;align-items:flex-start;pointer-events:none;white-space:nowrap;">
-      <div style="position:relative;width:${isMe ? 40 : 30}px;height:${isMe ? 40 : 30}px;margin-bottom:3px;">
+      <div style="position:relative;width:${isMe ? 55 : 45}px;height:${isMe ? 55 : 45}px;margin-bottom:3px;">
         ${isMe ? `<div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.3;" class="marker-ping"></div>` : ''}
         <img class="${isZ5 ? 'flame-flicker' : ''}" src="/phantom-bike.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:${bikeFilter}; transition: filter 0.3s;" />
       </div>
-      <div style="background:rgba(4,4,7,0.85);border:1px solid ${color};border-radius:5px;padding:2px 7px;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;color:#e2e2f0;line-height:1.45;backdrop-filter:blur(4px);max-width:110px;">
+      <div style="background:rgba(4,4,7,0.85);border:2px solid ${color};border-radius:6px;padding:3px 10px;font-family:'Inter',sans-serif;font-size:16px;font-weight:800;color:#e2e2f0;line-height:1.45;backdrop-filter:blur(4px);max-width:140px;">
         ${isMe ? '⚡ ' : ''}${name}
-        ${badge ? `<br><span style="font-size:9px;color:${color}">${badge}</span>` : ''}
+        ${badge ? `<br><span style="font-size:13px;color:${color}">${badge}</span>` : ''}
       </div>
     </div>`;
 }

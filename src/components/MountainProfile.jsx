@@ -41,14 +41,17 @@ export default function MountainProfile({ mountainId, players }) {
         }}>
 
             {/* Background elements */}
-            <div style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', opacity: 0.15, pointerEvents: 'none' }}>
-                <h1 style={{ fontSize: 280, fontFamily: "'Barlow Condensed', sans-serif", fontStyle: 'italic', margin: 0, whiteSpace: 'nowrap', color: '#f8fafc', textShadow: '0 0 40px rgba(59,130,246,0.3)' }}>
-                    {mt.name.toUpperCase()}
-                </h1>
-            </div>
+            {/* The text has been moved inside the SVG so it scales naturally and doesn't block the UI container layout */}
 
             <div style={{ position: 'relative', width: '90%', maxWidth: 1400, aspectRatio: '2/1' }}>
                 <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+
+                    {/* Scalable Background Text */}
+                    <text x={W / 2} y={H / 2 - 50} textAnchor="middle" fill="#f8fafc" opacity="0.25"
+                        fontFamily="'Barlow Condensed', sans-serif" fontStyle="italic" fontSize="260"
+                        fontWeight="900" style={{ textShadow: '0 0 40px rgba(59,130,246,0.4)', pointerEvents: 'none' }}>
+                        {mt.name.toUpperCase()}
+                    </text>
 
                     {/* Grid lines */}
                     {[0.25, 0.5, 0.75, 1].map(frac => (
@@ -72,68 +75,109 @@ export default function MountainProfile({ mountainId, players }) {
                     })}
 
                     {/* Players */}
-                    {sortedPlayers.map((p, i) => {
-                        // Clamp distance
-                        const safeKm = Math.max(0, Math.min(p.distKm, mt.totalDistKm));
+                    {(() => {
+                        // Calculate base positions for everyone
+                        const playerPositions = sortedPlayers.map((p) => {
+                            const safeKm = Math.max(0, Math.min(p.distKm, mt.totalDistKm));
 
-                        // Interpolate elevation for smooth avatar placement
-                        let currentP = points[0];
-                        let nextP = points[1];
-                        for (let j = 0; j < points.length - 1; j++) {
-                            if (safeKm >= points[j].km && safeKm <= points[j + 1].km) {
-                                currentP = points[j];
-                                nextP = points[j + 1];
-                                break;
+                            let currentP = points[0];
+                            let nextP = points[1];
+                            for (let j = 0; j < points.length - 1; j++) {
+                                if (safeKm >= points[j].km && safeKm <= points[j + 1].km) {
+                                    currentP = points[j];
+                                    nextP = points[j + 1];
+                                    break;
+                                }
                             }
+
+                            const frac = (safeKm - currentP.km) / (nextP.km - currentP.km || 1);
+                            const exactElev = currentP.elev + frac * (nextP.elev - currentP.elev);
+
+                            return {
+                                ...p,
+                                safeKm,
+                                px: getX(safeKm),
+                                py: getY(exactElev),
+                                isSpurting: (p.wkg || (p.watts / (p.weight || 75))) > 4.5,
+                            };
+                        });
+
+                        // Collision resolution algorithm (stacking vertically)
+                        // Sort by X descending so we process leading riders first.
+                        const sortedByX = [...playerPositions].sort((a, b) => b.px - a.px);
+                        const boxes = [];
+
+                        const MIN_X_DIST = 100; // ~100px SVG units minimum separation for labels
+                        const Y_OFFSET_STEP = 100; // Shift up by 100 SVG units per conflict
+
+                        for (const p of sortedByX) {
+                            let overlapCount = 0;
+                            // Check previous boxes to see if we overlap horizontally
+                            for (const box of boxes) {
+                                if (Math.abs(p.px - box.px) < MIN_X_DIST) {
+                                    // There is a horizontal conflict. Stack on top.
+                                    // The number of overlapping items found in this column tells us how high to go.
+                                    overlapCount = Math.max(overlapCount, box.overlapStack + 1);
+                                }
+                            }
+
+                            p.yOffset = -(overlapCount * Y_OFFSET_STEP);
+                            boxes.push({ px: p.px, overlapStack: overlapCount });
                         }
 
-                        const frac = (safeKm - currentP.km) / (nextP.km - currentP.km || 1);
-                        const exactElev = currentP.elev + frac * (nextP.elev - currentP.elev);
+                        // Render them
+                        return playerPositions.map((p, i) => {
+                            const isBot = p.isBot;
+                            const color = p.team === 'A' ? '#eab308' :
+                                p.team === 'B' ? '#3b82f6' :
+                                    p.team === 'C' ? '#22c55e' :
+                                        p.team === 'D' ? '#a855f7' :
+                                            (p.color || '#fff');
 
-                        const px = getX(safeKm);
-                        const py = getY(exactElev);
+                            const playerWkg = p.wkg || (p.watts / (p.weight || 75));
 
-                        // If team mode, use team color, else use their avatar color fallback
-                        const isBot = p.isBot;
-                        const color = p.team === 'A' ? '#eab308' :
-                            p.team === 'B' ? '#3b82f6' :
-                                p.team === 'C' ? '#22c55e' :
-                                    p.team === 'D' ? '#a855f7' :
-                                        (p.color || '#fff');
+                            return (
+                                <g key={p.id} style={{ transition: 'transform 0.5s linear' }} transform={`translate(${p.px}, ${p.py})`}>
+                                    {/* Drop line to ground */}
+                                    <line x1={0} y1={0} x2={0} y2={H - MARGIN_BOTTOM - p.py} stroke={color} strokeWidth="2" strokeDasharray="3 3" opacity={0.4} />
 
-                        const playerWkg = p.wkg || (p.watts / (p.weight || 75));
-                        const isSpurting = playerWkg > 4.5;
+                                    {/* Line connecting the stacked label down to the actual dot (only shown if shifted) */}
+                                    {p.yOffset < 0 && (
+                                        <line x1={0} y1={p.yOffset} x2={0} y2={-20} stroke={color} strokeWidth="2" strokeDasharray="5 5" opacity={0.8} />
+                                    )}
 
-                        return (
-                            <g key={p.id} style={{ transition: 'transform 0.5s linear' }} transform={`translate(${px}, ${py})`}>
-                                {/* Drop line to ground */}
-                                <line x1={0} y1={0} x2={0} y2={H - MARGIN_BOTTOM - py} stroke={color} strokeWidth="2" strokeDasharray="3 3" opacity={0.4} />
+                                    {/* Base Color dot / highlight */}
+                                    <circle cx="0" cy="-10" r={isBot ? 8 : 12} fill={color} stroke="#000" strokeWidth="3" />
 
-                                {isSpurting && (
-                                    <text x="-25" y="-10" fontSize="26" style={{ filter: 'drop-shadow(0 0 8px #f97316)' }}>🔥</text>
-                                )}
+                                    {/* The movable label group container */}
+                                    <g transform={`translate(0, ${p.yOffset})`}>
+                                        {p.isSpurting && (
+                                            <text x="-35" y="-15" fontSize="36" style={{ filter: 'drop-shadow(0 0 12px #f97316)' }}>🔥</text>
+                                        )}
 
-                                {/* Bike / Avatar */}
-                                <image href="/landing-bike2.png" x="-25" y="-35" width="50" height="50" opacity={0.9} />
+                                        {/* Bike / Avatar (enlarged) */}
+                                        <image href="/phantom-bike.png" x="-40" y="-55" width="80" height="80" opacity={0.95} />
 
-                                {/* Base Color dot / highlight */}
-                                <circle cx="0" cy="-10" r={isBot ? 5 : 8} fill={color} stroke="#000" strokeWidth="2" />
+                                        {/* Player Name (Significantly larger) */}
+                                        <text y="-65" fill="#fff" fontSize={isBot ? "20" : "26"} fontWeight="bold"
+                                            fontFamily="Inter, sans-serif" textAnchor="middle"
+                                            paintOrder="stroke" stroke="#000" strokeWidth="7" strokeLinejoin="round">
+                                            {p.name}
+                                        </text>
 
-                                <text y="-40" fill="#fff" fontSize={isBot ? "13" : "16"} fontWeight="bold"
-                                    fontFamily="Inter, sans-serif" textAnchor="middle"
-                                    paintOrder="stroke" stroke="#000" strokeWidth="6" strokeLinejoin="round">
-                                    {p.name}
-                                </text>
-                                {!isBot && (
-                                    <text y="-58" fill="#cbd5e1" fontSize="11" fontWeight="900"
-                                        fontFamily="Inter, sans-serif" textAnchor="middle"
-                                        paintOrder="stroke" stroke="#000" strokeWidth="5" strokeLinejoin="round">
-                                        {playerWkg.toFixed(1)} W/kg
-                                    </text>
-                                )}
-                            </g>
-                        );
-                    })}
+                                        {/* W/kg Metrics */}
+                                        {!isBot && (
+                                            <text y="-88" fill="#e2e2f0" fontSize="16" fontWeight="900"
+                                                fontFamily="Inter, sans-serif" textAnchor="middle"
+                                                paintOrder="stroke" stroke="#000" strokeWidth="6" strokeLinejoin="round">
+                                                {playerWkg.toFixed(1)} W/kg
+                                            </text>
+                                        )}
+                                    </g>
+                                </g>
+                            );
+                        });
+                    })()}
 
                     <defs>
                         <linearGradient id="mtnGrad" x1="0" y1="0" x2="0" y2="1">

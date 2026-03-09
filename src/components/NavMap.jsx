@@ -103,8 +103,8 @@ export default function NavMap({
         myDotRef.current = L.marker(startPos, {
             icon: L.divIcon({
                 className: '',
-                html: `<img src="/phantom-bike.png" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 6px #22c55e);" />`,
-                iconSize: [36, 36], iconAnchor: [18, 18],
+                html: `<img src="/phantom-bike.png" style="width:55px;height:55px;object-fit:contain;filter:drop-shadow(0 0 6px #22c55e);" />`,
+                iconSize: [55, 55], iconAnchor: [27, 27],
             }),
             zIndexOffset: 2000,
         }).addTo(map);
@@ -213,13 +213,13 @@ export default function NavMap({
             if (!pos) return;
             const icon = L.divIcon({
                 className: '',
-                html: `<div style="display:flex;align-items:center;gap:4px;pointer-events:none;">
-                    <img src="/phantom-bike.png" style="width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 0 4px ${color});flex-shrink:0;" />
-                    <div style="background:rgba(0,0,0,0.85);border:1px solid ${color};border-radius:4px;padding:1px 5px;font-size:9px;color:#fff;white-space:nowrap;font-family:Inter,sans-serif;">
+                html: `<div style="display:flex;align-items:center;gap:6px;pointer-events:none;">
+                    <img src="/phantom-bike.png" style="width:45px;height:45px;object-fit:contain;filter:drop-shadow(0 0 4px ${color});flex-shrink:0;" />
+                    <div style="background:rgba(0,0,0,0.85);border:2px solid ${color};border-radius:6px;padding:4px 10px;font-size:15px;color:#fff;white-space:nowrap;font-family:Inter,sans-serif;">
                         <b>${name ?? ''}</b> ${distKm.toFixed(2)} km
                     </div>
                 </div>`,
-                iconSize: [130, 24], iconAnchor: [12, 12],
+                iconSize: [200, 45], iconAnchor: [22, 22],
             });
             if (refs[id]) { refs[id].setLatLng(pos); refs[id].setIcon(icon); }
             else refs[id] = L.marker(pos, { icon, zIndexOffset: 50 }).addTo(map);

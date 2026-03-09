@@ -290,23 +290,23 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
             <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0, zIndex: 300,
                 background: 'linear-gradient(180deg,rgba(4,4,7,0.92) 0%,transparent 100%)',
-                padding: '8px 16px 12px',
+                padding: 'clamp(8px, 1vh, 16px) clamp(16px, 2vw, 32px) clamp(12px, 1.5vh, 24px)',
                 display: 'flex', alignItems: 'center', gap: 10,
             }}>
                 {/* Room code pill */}
                 <div style={{
                     background: 'rgba(255,255,255,0.06)', border: '1px solid #1e1e2e',
-                    borderRadius: 99, padding: '3px 10px', flexShrink: 0,
-                    fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif',
+                    borderRadius: 99, padding: 'clamp(3px, 0.5vh, 6px) clamp(10px, 1.2vw, 16px)', flexShrink: 0,
+                    fontSize: 'clamp(9px, 1.2vw, 14px)', fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif',
                 }}>#{roomCode}</div>
 
                 {/* Progress bar */}
                 <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#52526a', fontFamily: 'Inter,sans-serif', marginBottom: 3 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'clamp(9px, 1.2vw, 14px)', color: '#52526a', fontFamily: 'Inter,sans-serif', marginBottom: 3 }}>
                         <span>{physics.totalDistKm.toFixed(2)} km</span>
                         <span>{cityData.target} · {distLeft.toFixed(2)} km left {routeWaypoints ? '📍' : '⏳'}</span>
                     </div>
-                    <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ height: 'clamp(4px, 0.5vh, 8px)', background: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${(progress * 100).toFixed(1)}%`, background: 'linear-gradient(90deg,#3b82f6,#22c55e)', borderRadius: 99, transition: 'width 0.5s' }} />
                     </div>
                 </div>
@@ -317,9 +317,9 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                         <div style={{
                             background: `rgba(255,255,255,0.05)`,
                             border: `1px solid ${TEAM_COLORS[team]}`,
-                            borderRadius: 99, padding: '3px 10px', flexShrink: 0,
+                            borderRadius: 99, padding: 'clamp(3px, 0.5vh, 6px) clamp(10px, 1.2vw, 18px)', flexShrink: 0,
                             fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                            fontSize: 13, fontWeight: 900, color: TEAM_COLORS[team],
+                            fontSize: 'clamp(13px, 1.6vw, 20px)', fontWeight: 900, color: TEAM_COLORS[team],
                         }}>
                             TEAM {team} · {myTeamRank === 1 ? '🏆' : `#${myTeamRank}`}/{totalTeams}
                         </div>
@@ -327,9 +327,9 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                     <div style={{
                         background: myRank === 1 ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'rgba(255,255,255,0.05)',
                         border: `1px solid ${myRank === 1 ? '#eab308' : '#1e1e2e'}`,
-                        borderRadius: 99, padding: '3px 10px', flexShrink: 0,
+                        borderRadius: 99, padding: 'clamp(3px, 0.5vh, 6px) clamp(10px, 1.2vw, 18px)', flexShrink: 0,
                         fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                        fontSize: 13, fontWeight: 900, color: myRank === 1 ? '#000' : '#e2e2f0',
+                        fontSize: 'clamp(13px, 1.6vw, 20px)', fontWeight: 900, color: myRank === 1 ? '#000' : '#e2e2f0',
                     }}>
                         {myRank === 1 ? '🏆' : `#${myRank}`}/{allPlayers.length}
                     </div>
@@ -339,7 +339,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
 
             {/* ── RIGHT LEADERBOARD PANEL ──────────────────────── */}
             <div style={{
-                position: 'absolute', top: 56, right: 16, zIndex: 300,
+                position: 'absolute', top: 'clamp(56px, 8vh, 80px)', right: 'clamp(16px, 2vw, 32px)', zIndex: 300,
                 display: 'flex', flexDirection: 'column',
                 pointerEvents: 'none',
             }}>
@@ -357,25 +357,25 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                 }}>
                     <div style={{
                         background: '#0d0d14', border: '1px solid #1e1e2e',
-                        borderRadius: 20, padding: 40, textAlign: 'center',
-                        maxWidth: 400, width: '90%',
+                        borderRadius: 20, padding: 'clamp(20px, 4vw, 60px)', textAlign: 'center',
+                        maxWidth: 'clamp(400px, 50vw, 800px)', width: '90%',
                         boxShadow: '0 0 60px rgba(59,130,246,0.1)',
                         pointerEvents: 'auto',
                     }}>
-                        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+                        <div style={{ fontSize: 'clamp(48px, 6vw, 96px)', marginBottom: 16 }}>⏳</div>
                         <h2 style={{
                             fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                            fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 8,
+                            fontSize: 'clamp(32px, 4vw, 64px)', fontWeight: 900, color: '#fff', marginBottom: 8,
                         }}>WAITING FOR INSTRUCTOR</h2>
-                        <p style={{ fontSize: 13, color: '#94a3b8', fontFamily: 'Inter,sans-serif', lineHeight: 1.5, marginBottom: 24 }}>
+                        <p style={{ fontSize: 'clamp(13px, 1.5vw, 24px)', color: '#94a3b8', fontFamily: 'Inter,sans-serif', lineHeight: 1.5, marginBottom: 24 }}>
                             The instructor is setting up the session. The race will begin automatically when they start the countdown.
                         </p>
                         <div style={{
                             display: 'inline-flex', alignItems: 'center', gap: 8,
-                            background: 'rgba(255,255,255,0.05)', borderRadius: 99, padding: '6px 16px',
+                            background: 'rgba(255,255,255,0.05)', borderRadius: 99, padding: 'clamp(6px, 1vh, 12px) clamp(16px, 2vw, 32px)',
                         }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'btSpin 1s linear infinite' }} />
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#e2e2f0', letterSpacing: 1 }}>ROOM {roomCode}</span>
+                            <div style={{ width: 'clamp(8px, 1vw, 16px)', height: 'clamp(8px, 1vw, 16px)', borderRadius: '50%', background: '#3b82f6', animation: 'btSpin 1s linear infinite' }} />
+                            <span style={{ fontSize: 'clamp(11px, 1.2vw, 18px)', fontWeight: 700, color: '#e2e2f0', letterSpacing: 1 }}>ROOM {roomCode}</span>
                         </div>
                     </div>
                 </div>
@@ -385,7 +385,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
             {countdown !== null && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(0,0,0,0.25)' }}>
                     <div className="countdown-pop" style={{
-                        fontFamily: "'Barlow Condensed',sans-serif", fontSize: 180, fontWeight: 900, fontStyle: 'italic',
+                        fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(120px, 15vw, 280px)', fontWeight: 900, fontStyle: 'italic',
                         color: countdown === 0 ? '#22c55e' : '#fff',
                         textShadow: countdown === 0 ? '0 0 80px #22c55e' : '0 0 40px rgba(255,255,255,0.3)',
                     }}>{countdown === 0 ? 'GO!' : countdown}</div>
@@ -395,19 +395,19 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
             {/* ── POLICE STOP ──────────────────────────────────── */}
             {isPoliceStop && (
                 <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 450, textAlign: 'center', pointerEvents: 'none' }}>
-                    <div style={{ background: 'rgba(239,68,68,0.18)', border: '2px solid #ef4444', borderRadius: 20, padding: '20px 36px', backdropFilter: 'blur(12px)', boxShadow: '0 0 60px rgba(239,68,68,0.35)' }}>
-                        <div style={{ fontSize: 40, marginBottom: 6 }}>🚔</div>
-                        <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', fontSize: 28, fontWeight: 900, color: '#ef4444' }}>POLICE CONTROL</p>
-                        <p style={{ fontSize: 48, fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", color: '#fff', lineHeight: 1 }}>{policeSec}s</p>
+                    <div style={{ background: 'rgba(239,68,68,0.18)', border: '2px solid #ef4444', borderRadius: 20, padding: 'clamp(20px, 3vw, 40px) clamp(36px, 5vw, 64px)', backdropFilter: 'blur(12px)', boxShadow: '0 0 60px rgba(239,68,68,0.35)' }}>
+                        <div style={{ fontSize: 'clamp(40px, 5vw, 80px)', marginBottom: 6 }}>🚔</div>
+                        <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', fontSize: 'clamp(28px, 3.5vw, 56px)', fontWeight: 900, color: '#ef4444' }}>POLICE CONTROL</p>
+                        <p style={{ fontSize: 'clamp(48px, 6vw, 96px)', fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", color: '#fff', lineHeight: 1 }}>{policeSec}s</p>
                     </div>
                 </div>
             )}
 
             {/* ── RED LIGHT BANNER ─────────────────────────────── */}
             {playerAtRed && !isPoliceStop && (
-                <div style={{ position: 'absolute', bottom: 130, left: '50%', transform: 'translateX(-50%)', zIndex: 400, pointerEvents: 'none' }}>
-                    <div style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: 12, padding: '8px 24px', backdropFilter: 'blur(8px)' }}>
-                        <p style={{ fontSize: 13, fontWeight: 800, letterSpacing: 3, color: '#ef4444', fontFamily: 'Inter,sans-serif' }}>🚦 RED LIGHT — STOPPED</p>
+                <div style={{ position: 'absolute', bottom: 'clamp(130px, 15vh, 200px)', left: '50%', transform: 'translateX(-50%)', zIndex: 400, pointerEvents: 'none' }}>
+                    <div style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: 12, padding: 'clamp(8px, 1vh, 16px) clamp(24px, 3vw, 48px)', backdropFilter: 'blur(8px)' }}>
+                        <p style={{ fontSize: 'clamp(13px, 1.5vw, 20px)', fontWeight: 800, letterSpacing: 3, color: '#ef4444', fontFamily: 'Inter,sans-serif' }}>🚦 RED LIGHT — STOPPED</p>
                     </div>
                 </div>
             )}
@@ -416,7 +416,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
             <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 300,
                 background: 'linear-gradient(180deg,transparent 0%,rgba(4,4,7,0.97) 35%)',
-                paddingTop: 36, paddingBottom: 16, paddingLeft: 16, paddingRight: 16,
+                paddingTop: 'clamp(36px, 4vh, 60px)', paddingBottom: 'clamp(16px, 2vh, 32px)', paddingLeft: 'clamp(16px, 2vw, 40px)', paddingRight: 'clamp(16px, 2vw, 40px)',
             }}>
                 {/* Rank badge */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
@@ -424,9 +424,9 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                         <div style={{
                             background: 'rgba(255,255,255,0.07)',
                             border: `1px solid ${TEAM_COLORS[team]}`,
-                            borderRadius: 99, padding: '4px 18px',
+                            borderRadius: 99, padding: 'clamp(4px, 0.5vh, 8px) clamp(18px, 2.5vw, 40px)',
                             fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                            fontSize: 16, fontWeight: 900, color: TEAM_COLORS[team],
+                            fontSize: 'clamp(16px, 2vw, 26px)', fontWeight: 900, color: TEAM_COLORS[team],
                             letterSpacing: 1,
                         }}>
                             TEAM {team} {myTeamRank === 1 ? '🏆' : myTeamRank === 2 ? '🥈' : myTeamRank === 3 ? '🥉' : `#${myTeamRank}`} of {totalTeams}
@@ -435,9 +435,9 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                     <div style={{
                         background: myRank === 1 ? 'linear-gradient(135deg,#eab308,#f59e0b)' : 'rgba(255,255,255,0.07)',
                         border: `1px solid ${myRank === 1 ? '#eab308' : '#1e1e2e'}`,
-                        borderRadius: 99, padding: '4px 18px',
+                        borderRadius: 99, padding: 'clamp(4px, 0.5vh, 8px) clamp(18px, 2.5vw, 40px)',
                         fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                        fontSize: 16, fontWeight: 900, color: myRank === 1 ? '#000' : '#e2e2f0',
+                        fontSize: 'clamp(16px, 2vw, 26px)', fontWeight: 900, color: myRank === 1 ? '#000' : '#e2e2f0',
                         letterSpacing: 1,
                     }}>
                         {myRank === 1 ? '🏆' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : `#${myRank}`} of {allPlayers.length}
@@ -445,7 +445,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                 </div>
 
                 {/* Main metrics row */}
-                <div style={{ display: 'grid', gridTemplateColumns: playMode === 'mountain' ? '1fr 1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: playMode === 'mountain' ? '1fr 1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 'clamp(6px, 1vw, 16px)' }}>
                     {[
                         { label: 'SPEED', value: `${Math.round(isPoliceStop ? 0 : physics.speed)}`, unit: 'km/h', color: '#22c55e', big: true },
                         { label: 'POWER', value: `${Math.round(activeWatts)}`, unit: 'W', color: '#f97316', big: false },
@@ -455,26 +455,26 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                     ].map(m => (
                         <div key={m.label} style={{
                             background: 'rgba(255,255,255,0.04)', border: '1px solid #1e1e2e',
-                            borderRadius: 14, padding: '10px 6px', textAlign: 'center',
+                            borderRadius: 'clamp(14px, 2vw, 24px)', padding: 'clamp(10px, 1.5vh, 20px) clamp(6px, 1vw, 16px)', textAlign: 'center',
                         }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, color: '#52526a', marginBottom: 4, fontFamily: 'Inter,sans-serif' }}>{m.label}</div>
-                            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', fontSize: m.big ? 38 : 28, fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.value}</div>
-                            <div style={{ fontSize: 9, color: '#52526a', fontFamily: 'Inter,sans-serif', marginTop: 2 }}>{m.unit}</div>
+                            <div style={{ fontSize: 'clamp(9px, 1vw, 16px)', fontWeight: 700, letterSpacing: 2, color: '#52526a', marginBottom: 4, fontFamily: 'Inter,sans-serif' }}>{m.label}</div>
+                            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', fontSize: m.big ? 'clamp(38px, 4.5vw, 64px)' : 'clamp(28px, 3.5vw, 48px)', fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.value}</div>
+                            <div style={{ fontSize: 'clamp(9px, 1vw, 16px)', color: '#52526a', fontFamily: 'Inter,sans-serif', marginTop: 2 }}>{m.unit}</div>
                         </div>
                     ))}
                 </div>
 
                 {/* Second row: dist, elapsed, cadence + BT status + controls */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                    <div style={{ flex: 1, display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 16px)', marginTop: 'clamp(8px, 1.5vh, 16px)' }}>
+                    <div style={{ flex: 1, display: 'flex', gap: 'clamp(8px, 1.5vw, 16px)' }}>
                         {[
                             { label: 'DIST', value: `${physics.totalDistKm.toFixed(2)} km` },
                             { label: 'ELAPSED', value: (() => { const s = physics.elapsedSec; return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; })() },
                             { label: 'CADENCE', value: activeCadence > 0 ? `${Math.round(activeCadence)} rpm` : '— rpm' },
                         ].map(m => (
-                            <div key={m.label} style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid #1e1e2e', borderRadius: 10, padding: '6px 8px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif' }}>{m.label}</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e2f0', fontFamily: 'Inter,sans-serif' }}>{m.value}</div>
+                            <div key={m.label} style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid #1e1e2e', borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(6px, 1vh, 12px) clamp(8px, 1vw, 16px)', textAlign: 'center' }}>
+                                <div style={{ fontSize: 'clamp(8px, 1vw, 14px)', fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif' }}>{m.label}</div>
+                                <div style={{ fontSize: 'clamp(14px, 1.5vw, 24px)', fontWeight: 700, color: '#e2e2f0', fontFamily: 'Inter,sans-serif' }}>{m.value}</div>
                             </div>
                         ))}
                     </div>
@@ -483,19 +483,19 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                     <div style={{
                         background: bluetooth.bikeConnected ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
                         border: `1px solid ${bluetooth.bikeConnected ? 'rgba(34,197,94,0.35)' : '#1e1e2e'}`,
-                        borderRadius: 10, padding: '6px 10px',
+                        borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(6px, 1vh, 12px) clamp(10px, 1.5vw, 20px)',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0,
                     }}>
-                        <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif' }}>BT</div>
+                        <div style={{ fontSize: 'clamp(8px, 1vw, 14px)', fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif' }}>BT</div>
                         <div style={{
-                            width: 10, height: 10, borderRadius: '50%',
+                            width: 'clamp(10px, 1.2vw, 16px)', height: 'clamp(10px, 1.2vw, 16px)', borderRadius: '50%',
                             background: bluetooth.bikeConnected ? '#22c55e' : bluetooth.hrConnected ? '#ef4444' : '#2a2a3a',
                             boxShadow: bluetooth.bikeConnected ? '0 0 6px #22c55e' : 'none',
                         }} />
                     </div>
 
                     {/* Controls */}
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 'clamp(6px, 1vw, 12px)' }}>
                         <button onClick={() => setIsSimulating(s => !s)} style={ctrlBtn(isSimulating, '#22c55e')}>
                             {isSimulating ? '⏸ SIM' : '▶ SIM'}
                         </button>

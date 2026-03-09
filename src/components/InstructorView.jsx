@@ -145,22 +145,23 @@ export default function InstructorView({ config, socket, onLeave }) {
             <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 20px',
+                padding: 'clamp(8px, 1.5vh, 20px) clamp(16px, 2vw, 30px)',
                 background: 'rgba(4,4,7,0.92)',
                 backdropFilter: 'blur(16px)',
                 borderBottom: '1px solid #1e1e2e',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1vw, 14px)' }}>
                     <h1 style={{
-                        fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', fontSize: 26, fontWeight: 900,
+                        fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
+                        fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 900, margin: 0,
                         background: 'linear-gradient(135deg,#fff 30%,#3b82f6 100%)',
                         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                     }}>DARK VELOCITY</h1>
-                    <span style={{ fontSize: 11, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, padding: '3px 10px', color: '#3b82f6', fontWeight: 700, letterSpacing: 1 }}>INSTRUCTOR</span>
-                    <span style={{ fontSize: 12, color: '#52526a', fontWeight: 600 }}>{cityData.name} → {cityData.target}</span>
+                    <span style={{ fontSize: 'clamp(9px, 1vw, 13px)', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, padding: 'clamp(2px, 0.5vh, 4px) clamp(6px, 1vw, 12px)', color: '#3b82f6', fontWeight: 700, letterSpacing: 1 }}>INSTRUCTOR</span>
+                    <span style={{ fontSize: 'clamp(10px, 1.2vw, 14px)', color: '#52526a', fontWeight: 600 }}>{cityData.name} → {cityData.target}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1vw, 12px)' }}>
                     <TrafficLight state={trafficState} />
 
                     {/* Bot simulation panel */}
@@ -182,44 +183,44 @@ export default function InstructorView({ config, socket, onLeave }) {
                     {!countdownStarted ? (
                         <button onClick={handleStart} style={{
                             background: 'linear-gradient(135deg,#15803d,#22c55e)', border: 'none',
-                            borderRadius: 10, padding: '10px 20px', color: '#fff',
-                            fontWeight: 700, fontSize: 14, letterSpacing: 1, cursor: 'pointer',
+                            borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(8px, 1.5vh, 12px) clamp(16px, 2vw, 24px)', color: '#fff',
+                            fontWeight: 700, fontSize: 'clamp(12px, 1.5vw, 16px)', letterSpacing: 1, cursor: 'pointer',
                             boxShadow: '0 4px 20px rgba(34,197,94,0.4)',
                         }}>🏁 START RACE</button>
                     ) : (
-                        <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: 10, padding: '10px 20px', color: '#22c55e', fontWeight: 700, fontSize: 14 }}>
+                        <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(8px, 1.5vh, 12px) clamp(16px, 2vw, 24px)', color: '#22c55e', fontWeight: 700, fontSize: 'clamp(12px, 1.5vw, 16px)' }}>
                             {raceStarted ? '🚀 RACE IN PROGRESS' : countdown !== null ? `STARTING IN ${countdown}…` : '✅ STARTED'}
                         </div>
                     )}
 
-                    <button onClick={onLeave} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '10px 16px', color: '#ef4444', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>✕ END</button>
+                    <button onClick={onLeave} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(8px, 1.5vh, 12px) clamp(12px, 1.5vw, 20px)', color: '#ef4444', fontWeight: 700, fontSize: 'clamp(11px, 1.2vw, 14px)', cursor: 'pointer' }}>✕ END</button>
                 </div>
             </div>
 
             {/* ── BOTTOM LEFT: QR + count ──────────────────────────── */}
-            <div style={{ position: 'absolute', bottom: 24, left: 24, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div className="glass" style={{ borderRadius: 16, padding: 18, textAlign: 'center' }}>
-                    <div style={{ background: '#fff', borderRadius: 10, padding: 8, display: 'inline-block', marginBottom: 8 }}>
-                        <QRCodeSVG value={joinUrl} size={110} level="M" />
+            <div style={{ position: 'absolute', bottom: 'clamp(16px, 3vh, 32px)', left: 'clamp(16px, 3vw, 32px)', zIndex: 100, display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 1.5vh, 16px)' }}>
+                <div className="glass" style={{ borderRadius: 'clamp(12px, 2vw, 20px)', padding: 'clamp(12px, 2vw, 24px)', textAlign: 'center' }}>
+                    <div style={{ background: '#fff', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(4px, 1vw, 10px)', display: 'inline-block', marginBottom: 'clamp(4px, 1vh, 10px)' }}>
+                        <QRCodeSVG value={joinUrl} size={110} style={{ width: 'clamp(80px, 12vw, 160px)', height: 'clamp(80px, 12vw, 160px)' }} level="M" />
                     </div>
-                    <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, marginBottom: 2 }}>ROOM · {roomCode}</p>
-                    <p style={{ fontSize: 10, color: '#52526a', letterSpacing: 1 }}>SCAN TO JOIN</p>
+                    <p style={{ fontSize: 'clamp(11px, 1.5vw, 16px)', fontWeight: 800, letterSpacing: 2, marginBottom: 'clamp(2px, 0.5vh, 4px)', margin: 0 }}>ROOM · {roomCode}</p>
+                    <p style={{ fontSize: 'clamp(9px, 1vw, 12px)', color: '#52526a', letterSpacing: 1, margin: 0 }}>SCAN TO JOIN</p>
                 </div>
-                <div className="glass" style={{ borderRadius: 12, padding: '10px 16px', textAlign: 'center' }}>
-                    <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic' }}>{riderCount}</p>
-                    <p style={{ fontSize: 10, color: '#52526a', letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase' }}>Riders on Map</p>
+                <div className="glass" style={{ borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(8px, 1.2vw, 16px)', textAlign: 'center' }}>
+                    <p style={{ fontSize: 'clamp(24px, 4vw, 40px)', fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', margin: 0 }}>{riderCount}</p>
+                    <p style={{ fontSize: 'clamp(9px, 1vw, 13px)', color: '#52526a', letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>Riders on Map</p>
                 </div>
             </div>
 
             {/* ── BOTTOM RIGHT: Leaderboard ────────────────────────── */}
-            <div style={{ position: 'absolute', bottom: 24, right: 24, zIndex: 100 }}>
+            <div style={{ position: 'absolute', bottom: 'clamp(16px, 3vh, 32px)', right: 'clamp(16px, 3vw, 32px)', zIndex: 100 }}>
                 <Leaderboard players={allPlayers.filter(p => p.role !== 'instructor')} myId={null} />
             </div>
 
             {/* ── COUNTDOWN ─────────────────────────────────────────── */}
             {countdown !== null && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: countdown === 0 ? 'transparent' : 'rgba(0,0,0,0.2)' }}>
-                    <div className="countdown-pop" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 240, fontWeight: 900, fontStyle: 'italic', color: countdown === 0 ? '#22c55e' : '#fff', textShadow: countdown === 0 ? '0 0 80px #22c55e' : '0 0 60px rgba(255,255,255,0.4)', lineHeight: 1 }}>
+                    <div className="countdown-pop" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 'clamp(120px, 30vw, 360px)', fontWeight: 900, fontStyle: 'italic', color: countdown === 0 ? '#22c55e' : '#fff', textShadow: countdown === 0 ? '0 0 80px #22c55e' : '0 0 60px rgba(255,255,255,0.4)', lineHeight: 1 }}>
                         {countdown === 0 ? 'GO!' : countdown}
                     </div>
                 </div>
