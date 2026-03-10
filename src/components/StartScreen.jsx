@@ -13,13 +13,7 @@ export default function StartScreen({ onChoose }) {
         return () => clearTimeout(t);
     }, []);
 
-    // Blinking effect for arcade feel
-    const blinkKeyframes = `
-        @keyframes insertCoinBlink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-        }
-    `;
+
 
     const cards = [
         {
@@ -50,8 +44,6 @@ export default function StartScreen({ onChoose }) {
             display: 'flex', flexDirection: 'row',
             opacity: show ? 1 : 0, transition: 'opacity 0.5s ease',
         }}>
-            <style>{blinkKeyframes}</style>
-
             {/* LEFT SIDE: Actions */}
             <div style={{
                 flex: 1, display: 'flex', flexDirection: 'column',
@@ -60,7 +52,7 @@ export default function StartScreen({ onChoose }) {
                 borderRight: '1px solid rgba(255,255,255,0.05)'
             }}>
                 {/* Logo */}
-                <div style={{ textAlign: 'center', marginBottom: 60 }}>
+                <div style={{ textAlign: 'center', marginBottom: 24 }}>
                     <div style={{
                         fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
                         fontSize: 'clamp(64px,10vw,100px)', fontWeight: 900, letterSpacing: -2, lineHeight: 1,
@@ -70,6 +62,22 @@ export default function StartScreen({ onChoose }) {
                     <p style={{ fontSize: 14, letterSpacing: 6, color: '#52526a', textTransform: 'uppercase', marginTop: 12 }}>
                         Multiplayer Indoor Cycle Race
                     </p>
+                </div>
+
+                {/* INSERT COIN gif */}
+                <div style={{ textAlign: 'center', marginBottom: 36 }}>
+                    <img
+                        src="/insert-coin.gif"
+                        alt="Insert Coin to Continue"
+                        style={{
+                            maxHeight: 'clamp(70px, 10vh, 130px)',
+                            maxWidth: '80%',
+                            objectFit: 'contain',
+                            filter: 'drop-shadow(0 0 32px rgba(34,197,94,0.5))',
+                            imageRendering: 'pixelated',
+                        }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                    />
                 </div>
 
                 {/* Role cards */}
@@ -93,18 +101,7 @@ export default function StartScreen({ onChoose }) {
                                 position: 'relative'
                             }}
                         >
-                            {card.isPrimary && (
-                                <div style={{
-                                    position: 'absolute', top: -16, background: '#22c55e', color: '#000',
-                                    padding: '4px 16px', borderRadius: 99, fontSize: 13, fontWeight: 900,
-                                    letterSpacing: 2, fontFamily: "'Barlow Condensed', sans-serif", fontStyle: 'italic',
-                                    animation: 'insertCoinBlink 1.5s infinite',
-                                    display: 'flex', alignItems: 'center', gap: '8px'
-                                }}>
-                                    <img src="/insert-coin.png" style={{ height: '16px', objectFit: 'contain' }} alt="Insert Coin" />
-                                    [ INSERT COIN ]
-                                </div>
-                            )}
+
                             <div style={{ fontSize: card.isPrimary ? 64 : 52, lineHeight: 1 }}>{card.icon}</div>
                             <div style={{
                                 fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',

@@ -4,6 +4,7 @@
 // ============================================================
 import { useState, useEffect } from 'react';
 import { CITIES } from '../utils/cities';
+import { MOUNTAINS } from '../utils/mountains';
 
 const CITY_FLAGS = {
     copenhagen: '🇩🇰', london: '🇬🇧', singapore: '🇸🇬', paris: '🇫🇷', tokyo: '🇯🇵',
@@ -68,11 +69,19 @@ export default function RaceList({ socket, bluetooth, onJoin, onBack }) {
     function joinManual() {
         const code = manualCode.trim().toUpperCase();
         if (!code) return;
-        // Try to infer city from room code prefix
+
+        // If this room is already in our list, use its full data (correct playMode/mountainId)
+        const knownRoom = rooms.find(r => r.code === code);
+        if (knownRoom) {
+            joinRoom(knownRoom);
+            return;
+        }
+
+        // Fallback for rooms not yet loaded — join as solo with inferred city
         const prefix = code.split('_')[0].toLowerCase();
         const cityMap = { cph: 'copenhagen', lon: 'london', sgp: 'singapore', par: 'paris', tky: 'tokyo' };
         const city = cityMap[prefix] ?? 'copenhagen';
-        onJoin({ role: 'rider', roomCode: code, city, radiusKm: 2, name: 'Rider', weight: 75, gender: 'male', ftp: 250, botCount: 0 });
+        onJoin({ role: 'rider', roomCode: code, city, radiusKm: 2, name: 'Rider', weight: 75, gender: 'male', ftp: 250, botCount: 0, playMode: 'solo' });
     }
 
     const inputStyle = {
@@ -124,19 +133,26 @@ export default function RaceList({ socket, bluetooth, onJoin, onBack }) {
                 {rooms.map(room => {
                     const city = CITIES[room.city];
                     const isLive = room.raceStarted;
+                    const isMountain = room.playMode === 'mountain';
+                    const mountain = isMountain ? MOUNTAINS[room.mountainId] : null;
                     return (
                         <div key={room.code} style={{
-                            background: '#0d0d14', border: `1px solid ${isLive ? 'rgba(34,197,94,0.3)' : '#1e1e2e'}`,
+                            background: '#0d0d14', border: `1px solid ${isLive ? 'rgba(34,197,94,0.3)' : isMountain ? 'rgba(132,204,22,0.25)' : '#1e1e2e'}`,
                             borderRadius: 16, padding: '18px 22px',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             gap: 16,
-                            boxShadow: isLive ? '0 0 20px rgba(34,197,94,0.08)' : 'none',
+                            boxShadow: isLive ? '0 0 20px rgba(34,197,94,0.08)' : isMountain ? '0 0 16px rgba(132,204,22,0.05)' : 'none',
                         }}>
                             <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                                    <span style={{ fontSize: 20 }}>{CITY_FLAGS[room.city] ?? '🗺️'}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: 20 }}>
+                                        {isMountain ? '⛰️' : (CITY_FLAGS[room.city] ?? '🗺️')}
+                                    </span>
                                     <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', fontSize: 22, fontWeight: 900, color: '#e2e2f0' }}>
-                                        {city?.name ?? room.city} → {city?.target ?? '?'}
+                                        {isMountain
+                                            ? (mountain?.name ?? 'Mountain Race')
+                                            : `${city?.name ?? room.city} → ${city?.target ?? '?'}`
+                                        }
                                     </span>
                                     <span style={{
                                         fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: '2px 8px', borderRadius: 6,
@@ -144,23 +160,35 @@ export default function RaceList({ socket, bluetooth, onJoin, onBack }) {
                                         color: isLive ? '#22c55e' : '#3b82f6',
                                         border: `1px solid ${isLive ? 'rgba(34,197,94,0.3)' : 'rgba(59,130,246,0.3)'}`,
                                     }}>{isLive ? '● LIVE' : '⏳ WAITING'}</span>
+                                    {isMountain && (
+                                        <span style={{
+                                            fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: '2px 8px', borderRadius: 6,
+                                            background: 'rgba(132,204,22,0.12)', color: '#84cc16',
+                                            border: '1px solid rgba(132,204,22,0.3)',
+                                        }}>⛰️ MOUNTAIN</span>
+                                    )}
                                 </div>
-                                <div style={{ fontSize: 12, color: '#52526a', display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <div style={{ fontSize: 12, color: '#52526a', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><img src="/landing-bike.png" style={{ height: '1.2em' }} alt="bike" /> {room.riderCount ?? 0} riders</span>
                                     <span>🤖 {room.botCount ?? 0} bots</span>
-                                    <span>📏 {room.radiusKm ?? 2} km</span>
+                                    {isMountain
+                                        ? <span>📏 {mountain?.totalDistKm ?? room.radiusKm ?? '?'} km climb{mountain ? ` · ${mountain.country}` : ''}</span>
+                                        : <span>📏 {room.radiusKm ?? 2} km</span>
+                                    }
                                     <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2a2a3a' }}>#{room.code}</span>
                                 </div>
                             </div>
                             <button onClick={() => joinRoom(room)} style={{
                                 background: isLive
                                     ? 'linear-gradient(135deg,#15803d,#22c55e)'
-                                    : 'linear-gradient(135deg,#1d4ed8,#3b82f6)',
+                                    : isMountain
+                                        ? 'linear-gradient(135deg,#365314,#84cc16)'
+                                        : 'linear-gradient(135deg,#1d4ed8,#3b82f6)',
                                 border: 'none', borderRadius: 10, padding: '10px 20px',
                                 color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: 1,
                                 cursor: 'pointer', whiteSpace: 'nowrap',
-                                boxShadow: isLive ? '0 4px 16px rgba(34,197,94,0.35)' : '0 4px 16px rgba(59,130,246,0.35)',
-                            }}>{isLive ? '🚀 JOIN LIVE' : '🎯 JOIN'}</button>
+                                boxShadow: isLive ? '0 4px 16px rgba(34,197,94,0.35)' : isMountain ? '0 4px 16px rgba(132,204,22,0.3)' : '0 4px 16px rgba(59,130,246,0.35)',
+                            }}>{isLive ? '🚀 JOIN LIVE' : isMountain ? '⛰️ JOIN CLIMB' : '🎯 JOIN'}</button>
                         </div>
                     );
                 })}

@@ -184,7 +184,11 @@ io.on('connection', (socket) => {
         scheduleLight(roomCode, io);
         socket.emit('START_POSITION', { position: startPos });
         socket.emit('LIGHT_CHANGE', { state: room.trafficState });
-        socket.emit('ROOM_STATE', { raceStarted: room.raceStarted });
+        socket.emit('ROOM_STATE', {
+            raceStarted: room.raceStarted,
+            playMode: room.playMode ?? 'solo',
+            mountainId: room.mountainId ?? null,
+        });
 
         // Generate police checkpoints (only once per room)
         if (room.policeCheckpoints.length === 0) {

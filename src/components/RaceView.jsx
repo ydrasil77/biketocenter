@@ -11,7 +11,8 @@ import { usePhysics } from '../hooks/usePhysics';
 import { useBots } from '../hooks/useBots';
 import { CITIES, haversine, calcStartPositions } from '../utils/cities';
 import { fetchStreetRoute, sampleRoutePositions } from '../utils/routing';
-import { getMountainGrade } from '../utils/mountains';
+import { getMountainGrade, MOUNTAINS } from '../utils/mountains';
+import MountainProfile from './MountainProfile';
 
 // ── Per-route traffic lights (client-side) ───────────────────
 function useMapTrafficLights(routeWaypoints, count = 5) {
@@ -58,12 +59,16 @@ function useMapTrafficLights(routeWaypoints, count = 5) {
 
 export default function RaceView({ config, bluetooth, socket, onLeave }) {
     const { name, weight, gender, city, ftp, roomCode, radiusKm = 2, botCount = 0, team = null, playMode = 'solo', mountainId = null } = config;
+    // Server-provided room mode overrides config (fixes manual join for mountain rooms)
+    const effectivePlayMode = socket.roomPlayMode ?? playMode;
+    const effectiveMountainId = socket.roomMountainId ?? mountainId;
     const cityData = CITIES[city];
     const targetPos = cityData.center;
 
     const [isSimulating, setIsSimulating] = useState(botCount > 0);
     const [isPaused, setIsPaused] = useState(false);
     const [showStrava, setShowStrava] = useState(false);
+    const [showFinish, setShowFinish] = useState(false);
     const [simWatts, setSimWatts] = useState(0);
     const [simHr, setSimHr] = useState(0);
     const [simCadence, setSimCadence] = useState(0);
@@ -94,6 +99,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
 
     // ── Fetch OSRM route + alternatives at start ───────────────
     useEffect(() => {
+        if (effectivePlayMode === 'mountain') return; // no GPS route needed
         fetchStreetRoute(startPos, targetPos, { alternatives: true })
             .then(routes => {
                 // routes is an array of {waypoints,steps,distKm,durationMin}
@@ -130,7 +136,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
 
     // ── Join room ──────────────────────────────────────────────
     useEffect(() => {
-        joinRoom(roomCode, { name, city, role: 'rider', ftp, radiusKm, botCount: 0, playMode, team });
+        joinRoom(roomCode, { name, city, role: 'rider', ftp, radiusKm, botCount: 0, playMode: effectivePlayMode, team });
     }, []); // eslint-disable-line
 
     // ── Police stop countdown ──────────────────────────────────
@@ -174,7 +180,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
         trafficState: (isPoliceStop) ? 'RED' : 'GREEN', // Initial naive state. We will override it if needed below.
         startPosition: startPos, targetPosition: targetPos,
         routeWaypoints, headingOffset: heading,
-        mountainId: playMode === 'mountain' ? mountainId : null,
+        mountainId: effectivePlayMode === 'mountain' ? effectiveMountainId : null,
         active: isSimulating || raceStarted,
         paused: isPaused,
     });
@@ -204,11 +210,12 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
 
     const trafficStateFinal = (isPoliceStop || playerAtRed) ? 'RED' : 'GREEN';
 
-    const raceDistKm = playMode === 'mountain' ? radiusKm : haversine(startPos, targetPos);
+    const mt = (effectivePlayMode === 'mountain' && effectiveMountainId) ? MOUNTAINS[effectiveMountainId] : null;
+    const raceDistKm = mt ? mt.totalDistKm : haversine(startPos, targetPos);
     const progress = Math.min(physics.totalDistKm / raceDistKm, 1);
     const distLeft = Math.max(raceDistKm - physics.totalDistKm, 0);
 
-    const currentGrade = playMode === 'mountain' ? getMountainGrade(mountainId, physics.totalDistKm) : 0;
+    const currentGrade = mt ? getMountainGrade(effectiveMountainId, physics.totalDistKm) : 0;
 
     // ── Broadcast position ─────────────────────────────────────
     useEffect(() => {
@@ -218,13 +225,17 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                     id: socket.socketId, name, position: physics.position,
                     distKm: physics.totalDistKm, speed: physics.speed,
                     hr: activeHr, watts: activeWatts, zone: physics.zone?.id,
+                    weight, wkg: activeWatts > 0 && weight > 0 ? activeWatts / weight : 0,
+                    ftp,
                 });
             }
         }, 500);
         return () => clearInterval(iv);
     }, [physics.position, physics.totalDistKm, physics.speed, activeHr, activeWatts, physics.zone, name, updatePosition, socket.socketId]);
 
-    useEffect(() => { if (physics.arrived) setShowStrava(true); }, [physics.arrived]);
+    useEffect(() => {
+        if (mt ? physics.totalDistKm >= mt.totalDistKm : physics.arrived) setShowFinish(true);
+    }, [physics.arrived, physics.totalDistKm]); // eslint-disable-line
 
     // ── Players list ───────────────────────────────────────────
     const serverOthers = serverPlayers
@@ -232,10 +243,13 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
         .map((p, i) => ({ ...p, color: p.team ? TEAM_COLORS[p.team] : PLAYER_DOT_COLORS[i % PLAYER_DOT_COLORS.length] }));
     const allOtherPlayers = [...serverOthers, ...botPlayers.map(b => ({ ...b, color: b.team ? TEAM_COLORS[b.team] : b.color }))];
 
-    // Sorted leaderboard — includes me
+    // Sorted leaderboard — includes me (full metrics for MountainProfile boxes)
     const myEntry = {
         id: socket.socketId ?? 'me',
         name, distKm: physics.totalDistKm, speed: physics.speed, team, color: team ? TEAM_COLORS[team] : '#3b82f6',
+        watts: activeWatts, hr: activeHr,
+        wkg: activeWatts > 0 && weight > 0 ? activeWatts / weight : 0,
+        zone: physics.zone?.id, ftp, weight,
     };
     const allPlayers = [myEntry, ...allOtherPlayers]
         .sort((a, b) => (b.distKm ?? 0) - (a.distKm ?? 0));
@@ -272,22 +286,31 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
     return (
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
 
-            {/* ── NAVIGATION MAP (full screen) ─────────────────── */}
-            <NavMap
-                position={physics.position}
-                route={routeWaypoints}
-                steps={routeSteps}
-                wpIndex={physics.wpIndex}
-                altRoutes={altRoutes}
-                activeRouteIdx={activeRouteIdx}
-                onRouteChange={handleRouteChange}
-                otherPlayers={allOtherPlayers}
-                targetPosition={targetPos}
-                targetName={cityData.target}
-                trafficLights={mapTrafficLights}
-                speed={isPoliceStop ? 0 : physics.speed}
-                distLeftKm={distLeft}
-            />
+            {/* ── BACKGROUND VIEW ─────────────────────────────── */}
+            {effectivePlayMode === 'mountain' ? (
+                <MountainProfile
+                    mountainId={effectiveMountainId}
+                    players={allPlayers}
+                    roomCode={roomCode}
+                    joinUrl={`${window.location.origin}?room=${roomCode}`}
+                />
+            ) : (
+                <NavMap
+                    position={physics.position}
+                    route={routeWaypoints}
+                    steps={routeSteps}
+                    wpIndex={physics.wpIndex}
+                    altRoutes={altRoutes}
+                    activeRouteIdx={activeRouteIdx}
+                    onRouteChange={handleRouteChange}
+                    otherPlayers={allOtherPlayers}
+                    targetPosition={targetPos}
+                    targetName={cityData.target}
+                    trafficLights={mapTrafficLights}
+                    speed={isPoliceStop ? 0 : physics.speed}
+                    distLeftKm={distLeft}
+                />
+            )}
 
 
             {/* ── TOP PROGRESS BAR — full width, compact ────── */}
@@ -308,7 +331,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                 <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'clamp(9px, 1.2vw, 14px)', color: '#52526a', fontFamily: 'Inter,sans-serif', marginBottom: 3 }}>
                         <span>{physics.totalDistKm.toFixed(2)} km</span>
-                        <span>{cityData.target} · {distLeft.toFixed(2)} km left {routeWaypoints ? '📍' : '⏳'}</span>
+                        <span>{mt ? `⛰ ${mt.name} · ${distLeft.toFixed(2)} km left` : `${cityData.target} · ${distLeft.toFixed(2)} km left ${routeWaypoints ? '📍' : '⏳'}`}</span>
                     </div>
                     <div style={{ height: 'clamp(4px, 0.5vh, 8px)', background: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${(progress * 100).toFixed(1)}%`, background: 'linear-gradient(90deg,#3b82f6,#22c55e)', borderRadius: 99, transition: 'width 0.5s' }} />
@@ -341,16 +364,18 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
             </div>
 
 
-            {/* ── RIGHT LEADERBOARD PANEL ──────────────────────── */}
-            <div style={{
-                position: 'absolute', top: 'clamp(56px, 8vh, 80px)', right: 'clamp(16px, 2vw, 32px)', zIndex: 300,
-                display: 'flex', flexDirection: 'column',
-                pointerEvents: 'none',
-            }}>
-                <div style={{ pointerEvents: 'auto' }}>
-                    <Leaderboard players={allPlayers} myId={myEntry.id} />
+            {/* ── RIGHT LEADERBOARD PANEL — hidden in mountain mode (MountainProfile has its own) */}
+            {effectivePlayMode !== 'mountain' && (
+                <div style={{
+                    position: 'absolute', top: 'clamp(56px, 8vh, 80px)', right: 'clamp(16px, 2vw, 32px)', zIndex: 300,
+                    display: 'flex', flexDirection: 'column',
+                    pointerEvents: 'none',
+                }}>
+                    <div style={{ pointerEvents: 'auto' }}>
+                        <Leaderboard players={allPlayers} myId={myEntry.id} />
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* ── WAITING SCREEN (Pre-Race) ────────────────────────── */}
             {!effectiveRaceStarted && countdown === null && (
@@ -449,13 +474,13 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                 </div>
 
                 {/* Main metrics row */}
-                <div style={{ display: 'grid', gridTemplateColumns: playMode === 'mountain' ? '1fr 1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 'clamp(6px, 1vw, 16px)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: effectivePlayMode === 'mountain' ? '1fr 1fr 1fr 1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 'clamp(6px, 1vw, 16px)' }}>
                     {[
-                        { label: 'SPEED', value: `${Math.round(isPoliceStop ? 0 : physics.speed)}`, unit: 'km/h', color: '#22c55e', big: true },
+                        { label: 'SPEED', value: `${Math.round(isPoliceStop ? 0 : physics.speed)}`, unit: 'km/h', color: '#22c55e', big: !mt },
                         { label: 'POWER', value: `${Math.round(activeWatts)}`, unit: 'W', color: '#f97316', big: false },
                         { label: 'W/KG', value: wkg, unit: 'w/kg', color: '#a855f7', big: false },
                         { label: 'HR', value: activeHr > 0 ? Math.round(activeHr) : '—', unit: 'bpm', color: '#ef4444', big: false },
-                        ...(playMode === 'mountain' ? [{ label: 'INCLINE', value: `${(currentGrade * 100).toFixed(1)}`, unit: '%', color: '#3b82f6', big: false }] : []),
+                        ...(mt ? [{ label: 'INCLINE', value: `${(currentGrade * 100).toFixed(1)}`, unit: '%', color: currentGrade > 0.08 ? '#ef4444' : currentGrade > 0.05 ? '#f97316' : '#3b82f6', big: true }] : []),
                     ].map(m => (
                         <div key={m.label} style={{
                             background: 'rgba(255,255,255,0.04)', border: '1px solid #1e1e2e',
@@ -519,6 +544,71 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                     </div>
                 </div>
             </div>
+
+            {/* ── FINISH SCREEN ────────────────────────────────── */}
+            {showFinish && !showStrava && (
+                <div style={{
+                    position: 'absolute', inset: 0, zIndex: 600,
+                    background: 'linear-gradient(180deg, rgba(4,4,12,0.97) 0%, rgba(4,4,7,0.99) 100%)',
+                    backdropFilter: 'blur(12px)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 28,
+                }}>
+                    <div style={{ fontSize: 'clamp(64px,10vw,120px)', lineHeight: 1 }}>🏁</div>
+                    <div style={{
+                        fontFamily: "'Barlow Condensed', sans-serif", fontStyle: 'italic',
+                        fontSize: 'clamp(48px,8vw,96px)', fontWeight: 900,
+                        color: '#22c55e',
+                        textShadow: '0 0 60px rgba(34,197,94,0.6), 0 0 120px rgba(34,197,94,0.25)',
+                        letterSpacing: 2,
+                    }}>RACE COMPLETE!</div>
+
+                    {/* Stats grid */}
+                    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        {[
+                            { label: 'FINAL RANK', value: `#${myRank}`, unit: `of ${allPlayers.length}`, color: myRank === 1 ? '#facc15' : myRank === 2 ? '#e2e8f0' : myRank === 3 ? '#fb923c' : '#94a3b8' },
+                            { label: 'DISTANCE', value: physics.totalDistKm.toFixed(2), unit: 'km', color: '#22c55e' },
+                            { label: 'W/KG', value: wkg, unit: 'w/kg', color: '#a855f7' },
+                            { label: 'AVG SPEED', value: Math.round(physics.speed), unit: 'km/h', color: '#3b82f6' },
+                        ].map(s => (
+                            <div key={s.label} style={{
+                                background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`,
+                                borderRadius: 18, padding: '20px 32px', textAlign: 'center', minWidth: 130,
+                            }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, color: '#52526a', marginBottom: 6, textTransform: 'uppercase' }}>{s.label}</div>
+                                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontStyle: 'italic', fontSize: 48, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                                <div style={{ fontSize: 12, color: '#52526a', marginTop: 2 }}>{s.unit}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{ fontSize: 14, color: '#3f3f5a', letterSpacing: 1 }}>Score saved to arcade leaderboard ✓</div>
+
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', gap: 20, marginTop: 8 }}>
+                        <button
+                            onClick={() => setShowStrava(true)}
+                            style={{
+                                padding: '16px 36px', borderRadius: 14, fontSize: 16, fontWeight: 800,
+                                fontFamily: "'Barlow Condensed', sans-serif", fontStyle: 'italic', letterSpacing: 1,
+                                background: 'rgba(249,115,22,0.15)', border: '2px solid rgba(249,115,22,0.5)',
+                                color: '#fb923c', cursor: 'pointer',
+                            }}
+                        >📤 UPLOAD TO STRAVA</button>
+                        <button
+                            onClick={() => onLeave('arcade')}
+                            style={{
+                                padding: '16px 36px', borderRadius: 14, fontSize: 16, fontWeight: 800,
+                                fontFamily: "'Barlow Condensed', sans-serif", fontStyle: 'italic', letterSpacing: 1,
+                                background: 'linear-gradient(135deg, rgba(250,204,21,0.2), rgba(250,204,21,0.1))',
+                                border: '2px solid rgba(250,204,21,0.6)',
+                                color: '#facc15', cursor: 'pointer',
+                                boxShadow: '0 0 30px rgba(250,204,21,0.2)',
+                            }}
+                        >🏆 VIEW LEADERBOARD</button>
+                    </div>
+                </div>
+            )}
 
             {/* ── STRAVA MODAL ─────────────────────────────────── */}
             {showStrava && (

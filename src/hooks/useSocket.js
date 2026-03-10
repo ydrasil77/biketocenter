@@ -17,6 +17,8 @@ export function useSocket() {
     const [raceStarted, setRaceStarted] = useState(false);
     const [policeCheckpoints, setPoliceCheckpoints] = useState([]);  // [{id, position, radius}]
     const [policeStop, setPoliceStop] = useState(null); // { playerId, until }
+    const [roomPlayMode, setRoomPlayMode] = useState(null);   // set from server ROOM_STATE
+    const [roomMountainId, setRoomMountainId] = useState(null); // set from server ROOM_STATE
 
     useEffect(() => {
         const socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
@@ -38,8 +40,10 @@ export function useSocket() {
 
         socket.on('START_POSITION', ({ position }) => setMyStartPos(position));
 
-        socket.on('ROOM_STATE', ({ raceStarted }) => {
+        socket.on('ROOM_STATE', ({ raceStarted, playMode, mountainId }) => {
             setRaceStarted(raceStarted);
+            if (playMode) setRoomPlayMode(playMode);
+            if (mountainId !== undefined) setRoomMountainId(mountainId ?? null);
         });
 
         // Police checkpoints: array of {id, position:[lat,lng], radius}
@@ -80,6 +84,7 @@ export function useSocket() {
     return {
         connected, players, trafficState, countdown,
         myStartPos, raceStarted,
+        roomPlayMode, roomMountainId,
         policeCheckpoints, policeStop,
         joinRoom, updatePosition, triggerStart, addBots, removeBots,
         socketId: socketRef.current?.id,

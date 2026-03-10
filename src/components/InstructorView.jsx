@@ -167,7 +167,7 @@ export default function InstructorView({ config, socket, onLeave }) {
         <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
             {/* Full-screen map or Mountain Profile */}
             {playMode === 'mountain' ? (
-                <MountainProfile mountainId={mountainId} players={allPlayers} />
+                <MountainProfile mountainId={mountainId} players={allPlayers} roomCode={roomCode} joinUrl={joinUrl} />
             ) : (
                 <MapView
                     center={cityData.center}
@@ -240,25 +240,29 @@ export default function InstructorView({ config, socket, onLeave }) {
                 </div>
             </div>
 
-            {/* ── BOTTOM LEFT: QR + count ──────────────────────────── */}
-            <div style={{ position: 'absolute', bottom: 'clamp(16px, 3vh, 32px)', left: 'clamp(16px, 3vw, 32px)', zIndex: 100, display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 1.5vh, 16px)' }}>
-                <div className="glass" style={{ borderRadius: 'clamp(12px, 2vw, 20px)', padding: 'clamp(12px, 2vw, 24px)', textAlign: 'center' }}>
-                    <div style={{ background: '#fff', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(4px, 1vw, 10px)', display: 'inline-block', marginBottom: 'clamp(4px, 1vh, 10px)' }}>
-                        <QRCodeSVG value={joinUrl} size={110} style={{ width: 'clamp(80px, 12vw, 160px)', height: 'clamp(80px, 12vw, 160px)' }} level="M" />
+            {/* ── BOTTOM LEFT: QR + count (not shown in mountain mode — QR is in the side panel) */}
+            {playMode !== 'mountain' && (
+                <div style={{ position: 'absolute', bottom: 'clamp(16px, 3vh, 32px)', left: 'clamp(16px, 3vw, 32px)', zIndex: 100, display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 1.5vh, 16px)' }}>
+                    <div className="glass" style={{ borderRadius: 'clamp(12px, 2vw, 20px)', padding: 'clamp(12px, 2vw, 24px)', textAlign: 'center' }}>
+                        <div style={{ background: '#fff', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(4px, 1vw, 10px)', display: 'inline-block', marginBottom: 'clamp(4px, 1vh, 10px)' }}>
+                            <QRCodeSVG value={joinUrl} size={110} style={{ width: 'clamp(80px, 12vw, 160px)', height: 'clamp(80px, 12vw, 160px)' }} level="M" />
+                        </div>
+                        <p style={{ fontSize: 'clamp(11px, 1.5vw, 16px)', fontWeight: 800, letterSpacing: 2, marginBottom: 'clamp(2px, 0.5vh, 4px)', margin: 0 }}>ROOM · {roomCode}</p>
+                        <p style={{ fontSize: 'clamp(9px, 1vw, 12px)', color: '#52526a', letterSpacing: 1, margin: 0 }}>SCAN TO JOIN</p>
                     </div>
-                    <p style={{ fontSize: 'clamp(11px, 1.5vw, 16px)', fontWeight: 800, letterSpacing: 2, marginBottom: 'clamp(2px, 0.5vh, 4px)', margin: 0 }}>ROOM · {roomCode}</p>
-                    <p style={{ fontSize: 'clamp(9px, 1vw, 12px)', color: '#52526a', letterSpacing: 1, margin: 0 }}>SCAN TO JOIN</p>
+                    <div className="glass" style={{ borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(8px, 1.2vw, 16px)', textAlign: 'center' }}>
+                        <p style={{ fontSize: 'clamp(24px, 4vw, 40px)', fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', margin: 0 }}>{riderCount}</p>
+                        <p style={{ fontSize: 'clamp(9px, 1vw, 13px)', color: '#52526a', letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>Riders on Map</p>
+                    </div>
                 </div>
-                <div className="glass" style={{ borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(8px, 1.2vw, 16px)', textAlign: 'center' }}>
-                    <p style={{ fontSize: 'clamp(24px, 4vw, 40px)', fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', margin: 0 }}>{riderCount}</p>
-                    <p style={{ fontSize: 'clamp(9px, 1vw, 13px)', color: '#52526a', letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>Riders on Map</p>
-                </div>
-            </div>
+            )}
 
-            {/* ── BOTTOM RIGHT: Leaderboard ────────────────────────── */}
-            <div style={{ position: 'absolute', bottom: 'clamp(16px, 3vh, 32px)', right: 'clamp(16px, 3vw, 32px)', zIndex: 100 }}>
-                <Leaderboard players={allPlayers.filter(p => p.role !== 'instructor')} myId={null} />
-            </div>
+            {/* ── BOTTOM RIGHT: Leaderboard (not shown in mountain mode — side panel handles it) */}
+            {playMode !== 'mountain' && (
+                <div style={{ position: 'absolute', bottom: 'clamp(16px, 3vh, 32px)', right: 'clamp(16px, 3vw, 32px)', zIndex: 100 }}>
+                    <Leaderboard players={allPlayers.filter(p => p.role !== 'instructor')} myId={null} />
+                </div>
+            )}
 
             {/* ── COUNTDOWN ─────────────────────────────────────────── */}
             {countdown !== null && (
