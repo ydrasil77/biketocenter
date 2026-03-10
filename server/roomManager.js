@@ -4,7 +4,7 @@
 // Each bot starts immediately (no race-start gate).
 // ============================================================
 import fetch from 'node-fetch';
-import { getMountainGrade } from '../src/utils/mountains.js';
+import { getMountainGrade } from './mountains.js';
 
 const ROOMS = new Map();
 export { ROOMS };
