@@ -18,7 +18,9 @@ const TEAM_COLORS = {
 export { PLAYER_DOT_COLORS, TEAM_COLORS };
 
 export default function Leaderboard({ players = [], myId }) {
-    const sorted = [...players].sort((a, b) => (b.distKm ?? 0) - (a.distKm ?? 0));
+    // Only show real players on the leaderboard — no bots
+    const realPlayers = players.filter(p => !p.isBot);
+    const sorted = [...realPlayers].sort((a, b) => (b.distKm ?? 0) - (a.distKm ?? 0));
 
     const hasTeams = players.some(p => p.team);
     let teamScores = [];

@@ -56,6 +56,7 @@ export default function App() {
     function handleJoinRace(config) {
         setPendingRole('rider');
         setRaceConfig(config);
+        // Always go through Lobby so rider can enter name/weight/FTP and connect BT
         setScreen('lobby');
     }
 
@@ -103,7 +104,7 @@ export default function App() {
                 initialRole={pendingRole}
                 presetConfig={raceConfig}
                 onStart={handleStart}
-                onBack={handleBackToStart}
+                onBack={() => setScreen(pendingRole === 'rider' ? 'race-list' : 'start')}
                 bluetooth={bluetooth}
             />
         );

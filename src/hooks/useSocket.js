@@ -38,6 +38,10 @@ export function useSocket() {
 
         socket.on('START_POSITION', ({ position }) => setMyStartPos(position));
 
+        socket.on('ROOM_STATE', ({ raceStarted }) => {
+            setRaceStarted(raceStarted);
+        });
+
         // Police checkpoints: array of {id, position:[lat,lng], radius}
         socket.on('POLICE_CHECKPOINTS', (checkpoints) => {
             setPoliceCheckpoints(checkpoints);
@@ -69,11 +73,15 @@ export function useSocket() {
         socketRef.current?.emit('ADD_BOTS', { roomCode, count });
     }, []);
 
+    const removeBots = useCallback((roomCode) => {
+        socketRef.current?.emit('REMOVE_BOTS', { roomCode });
+    }, []);
+
     return {
         connected, players, trafficState, countdown,
         myStartPos, raceStarted,
         policeCheckpoints, policeStop,
-        joinRoom, updatePosition, triggerStart, addBots,
+        joinRoom, updatePosition, triggerStart, addBots, removeBots,
         socketId: socketRef.current?.id,
         rawSocket: socketRef.current,  // direct socket access for RaceList
     };

@@ -184,6 +184,7 @@ io.on('connection', (socket) => {
         scheduleLight(roomCode, io);
         socket.emit('START_POSITION', { position: startPos });
         socket.emit('LIGHT_CHANGE', { state: room.trafficState });
+        socket.emit('ROOM_STATE', { raceStarted: room.raceStarted });
 
         // Generate police checkpoints (only once per room)
         if (room.policeCheckpoints.length === 0) {
@@ -240,6 +241,17 @@ io.on('connection', (socket) => {
     socket.on('ADD_BOTS', ({ roomCode, count }) => {
         addBots(roomCode, Math.min(count, 15), io);
         broadcastPlayerList(roomCode, io);
+    });
+
+    // ── Instructor can remove all bots ──────────────────────────
+    socket.on('REMOVE_BOTS', ({ roomCode }) => {
+        const room = getRoom(roomCode);
+        if (!room) return;
+        clearInterval(room.botInterval);
+        room.botInterval = null;
+        room.bots.clear();
+        broadcastPlayerList(roomCode, io);
+        console.log(`[Room ${roomCode}] All bots removed`);
     });
 
     // ── Disconnect ───────────────────────────────────────────────

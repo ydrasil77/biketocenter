@@ -61,7 +61,7 @@ export default function InstructorView({ config, socket, onLeave }) {
     const cityData = CITIES[city];
     const targetPos = cityData.center;
 
-    const { trafficState, players, countdown, raceStarted, joinRoom, triggerStart } = socket;
+    const { trafficState, players, countdown, raceStarted, joinRoom, triggerStart, removeBots } = socket;
 
     const [countdownStarted, setCountdownStarted] = useState(false);
     const [simBotCount, setSimBotCount] = useState(8);
@@ -92,15 +92,46 @@ export default function InstructorView({ config, socket, onLeave }) {
         radiusKm,
         trafficState,
     });
-    // Pass every bot's individual route to MapView so they all draw their own colored line
-    const playerRoutes = {
-        ...botRoutes,
-        ...Object.fromEntries(
-            players
-                .filter(p => p.role !== 'instructor')
-                .map((p, i) => [p.id, routeWaypoints ?? []])
-        ),
-    };
+    // Per-rider route cache: fetch a fresh OSRM route for each rider on first sight
+    const riderRoutesRef = useRef({});
+    const [riderRoutes, setRiderRoutes] = useState({});
+
+    useEffect(() => {
+        const riderPlayers = players.filter(p => p.role !== 'instructor');
+        for (const p of riderPlayers) {
+            if (riderRoutesRef.current[p.id] || !p.position) continue;
+            riderRoutesRef.current[p.id] = 'pending'; // mark so we don't double-fetch
+            const startPos = [...p.position];
+            fetchStreetRoute(startPos, targetPos)
+                .then(result => {
+                    const wp = Array.isArray(result) ? result : result?.waypoints ?? null;
+                    if (wp && wp.length > 1) {
+                        riderRoutesRef.current[p.id] = wp;
+                        setRiderRoutes(prev => ({ ...prev, [p.id]: wp }));
+                    } else {
+                        delete riderRoutesRef.current[p.id]; // retry next render
+                    }
+                })
+                .catch(() => { delete riderRoutesRef.current[p.id]; });
+        }
+    }, [players, targetPos]); // eslint-disable-line
+
+    // Clean up routes for disconnected riders
+    useEffect(() => {
+        const currentIds = new Set(players.map(p => p.id));
+        const stale = Object.keys(riderRoutesRef.current).filter(id => !currentIds.has(id));
+        if (stale.length > 0) {
+            stale.forEach(id => delete riderRoutesRef.current[id]);
+            setRiderRoutes(prev => {
+                const next = { ...prev };
+                stale.forEach(id => delete next[id]);
+                return next;
+            });
+        }
+    }, [players]);
+
+    // Combine: bot routes + per-rider OSRM routes (no shared instructor route fallback)
+    const playerRoutes = { ...botRoutes, ...riderRoutes };
 
     // Traffic lights: shared reference lights + all per-bot route lights
     const sharedLights = useInstructorTrafficLights(routeWaypoints, 3);
@@ -109,15 +140,27 @@ export default function InstructorView({ config, socket, onLeave }) {
     const joinUrl = `${window.location.origin}?room=${roomCode}`;
 
     const allPlayers = [
-        ...players.map((p, i) => ({ ...p, color: PLAYER_DOT_COLORS[i % PLAYER_DOT_COLORS.length] })),
+        ...players
+            .filter(p => p.role !== 'instructor')
+            .map((p, i) => ({ ...p, color: PLAYER_DOT_COLORS[i % PLAYER_DOT_COLORS.length] })),
         ...botPlayers,
     ];
-    const riderCount = players.filter(p => p.role !== 'instructor').length + botPlayers.length;
+    const riderCount = allPlayers.filter(p => !p.isBot).length + botPlayers.filter(p => p.isBot).length;
 
     function handleStart() {
         setCountdownStarted(true);
         triggerStart(roomCode);
         if (!simActive && simBotCount > 0) setSimActive(true);
+    }
+
+    function handleToggleBots() {
+        if (simActive) {
+            // Stop: remove client-side bots and server-side bots both
+            setSimActive(false);
+            removeBots(roomCode);
+        } else {
+            setSimActive(true);
+        }
     }
 
     return (
@@ -172,7 +215,7 @@ export default function InstructorView({ config, socket, onLeave }) {
                             onChange={e => setSimBotCount(Math.min(15, Math.max(0, Number(e.target.value))))}
                             style={{ width: 40, background: '#0d0d14', border: '1px solid #1e1e2e', borderRadius: 6, color: '#e2e2f0', fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 700, padding: '2px 6px', textAlign: 'center', outline: 'none' }}
                         />
-                        <button onClick={() => setSimActive(s => !s)} style={{
+                        <button onClick={handleToggleBots} style={{
                             background: simActive ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)',
                             border: `1px solid ${simActive ? '#a855f7' : '#1e1e2e'}`,
                             borderRadius: 7, padding: '5px 12px',

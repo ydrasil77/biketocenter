@@ -13,25 +13,30 @@ delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconUrl: '', shadowUrl: '' });
 
 // ── Player label HTML ────────────────────────────────────────
-function playerLabelHtml(name, speed, hr, color, isMe, isZ5) {
-    const speedStr = speed > 0 ? `${speed.toFixed(1)}<span style="font-size:12px;opacity:0.7">km/h</span>` : '';
+function playerLabelHtml(name, speed, hr, color, isMe, isFlame, scale = 1) {
+    const speedStr = speed > 0 ? `${speed.toFixed(1)}<span style="font-size:${Math.round(10 * scale)}px;opacity:0.7">km/h</span>` : '';
     const hrStr = hr > 0 ? `❤ ${Math.round(hr)}` : '';
     const badge = [speedStr, hrStr].filter(Boolean).join(' · ');
 
-    // Add pulsing flame effect if isZ5 is true
-    const bikeFilter = isZ5
-        ? `drop-shadow(0 -4px 12px rgba(255, 69, 0, 0.9)) drop-shadow(0 0 8px rgba(255, 140, 0, 0.8))`
-        : `drop-shadow(0 0 ${isMe ? 6 : 4}px ${color})`;
+    const bikeSize = Math.round((isMe ? 52 : 40) * scale);
+    const fontSize = Math.round(14 * scale);
+    const badgeSize = Math.round(11 * scale);
+    const padding = scale < 0.7 ? '2px 6px' : '3px 10px';
+    const borderW = scale < 0.7 ? '1.5px' : '2px';
+
+    const bikeFilter = isFlame
+        ? `drop-shadow(0 -4px 10px rgba(255, 69, 0, 0.9)) drop-shadow(0 0 6px rgba(255, 140, 0, 0.8))`
+        : `drop-shadow(0 0 ${isMe ? 5 : 3}px ${color})`;
 
     return `
     <div style="display:flex;flex-direction:column;align-items:flex-start;pointer-events:none;white-space:nowrap;">
-      <div style="position:relative;width:${isMe ? 55 : 45}px;height:${isMe ? 55 : 45}px;margin-bottom:3px;">
-        ${isMe ? `<div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.3;" class="marker-ping"></div>` : ''}
-        <img class="${isZ5 ? 'flame-flicker' : ''}" src="/phantom-bike.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:${bikeFilter}; transition: filter 0.3s;" />
+      <div style="position:relative;width:${bikeSize}px;height:${bikeSize}px;margin-bottom:2px;">
+        ${isMe ? `<div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.28;" class="marker-ping"></div>` : ''}
+        <img class="${isFlame ? 'flame-flicker' : ''}" src="/phantom-bike.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:${bikeFilter};transition:filter 0.3s;" />
       </div>
-      <div style="background:rgba(4,4,7,0.85);border:2px solid ${color};border-radius:6px;padding:3px 10px;font-family:'Inter',sans-serif;font-size:16px;font-weight:800;color:#e2e2f0;line-height:1.45;backdrop-filter:blur(4px);max-width:140px;">
+      <div style="background:rgba(4,4,7,0.88);border:${borderW} solid ${color};border-radius:5px;padding:${padding};font-family:'Inter',sans-serif;font-size:${fontSize}px;font-weight:800;color:#e2e2f0;line-height:1.35;backdrop-filter:blur(4px);max-width:${Math.round(130 * scale)}px;overflow:hidden;text-overflow:ellipsis;">
         ${isMe ? '⚡ ' : ''}${name}
-        ${badge ? `<br><span style="font-size:13px;color:${color}">${badge}</span>` : ''}
+        ${badge ? `<br><span style="font-size:${badgeSize}px;color:${color}">${badge}</span>` : ''}
       </div>
     </div>`;
 }
@@ -93,26 +98,24 @@ export default function MapView({
         }).addTo(map);
         leafletRef.current = map;
 
-        // Target marker
+        // Target marker — large, always-visible destination flag
         if (targetPosition) {
+            const targetHtml = `
+                <div style="display:flex;flex-direction:column;align-items:center;pointer-events:none;">
+                    <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#15803d);border:3px solid #fff;box-shadow:0 0 24px #22c55e,0 0 8px rgba(34,197,94,0.8);display:flex;align-items:center;justify-content:center;font-size:16px;" class="marker-ping">🏁</div>
+                    <div style="background:rgba(34,197,94,0.95);color:#000;font-size:11px;font-weight:900;letter-spacing:1.5px;padding:3px 10px;border-radius:20px;margin-top:4px;font-family:'Barlow Condensed',sans-serif;white-space:nowrap;box-shadow:0 2px 12px rgba(34,197,94,0.5);">${targetName ?? 'DESTINATION'}</div>
+                </div>`;
             L.marker(targetPosition, {
                 icon: L.divIcon({
                     className: '',
-                    html: `<div style="width:22px;height:22px;border-radius:50%;background:#22c55e;border:3px solid #fff;box-shadow:0 0 18px #22c55e;"></div>`,
-                    iconSize: [22, 22], iconAnchor: [11, 11],
+                    html: targetHtml,
+                    iconSize: [120, 60], iconAnchor: [15, 15],
                 }),
-            }).addTo(map).bindTooltip(targetName ?? 'Target', {
-                permanent: !mini, className: 'target-tooltip', offset: [14, 0],
-            });
+                zIndexOffset: 800,
+            }).addTo(map);
         }
 
-        // Own trail — bright solid blue with glow underlay
-        // Two polylines: thick glow layer + bright top layer
-        myTrailRef.current = L.layerGroup([
-            L.polyline([], { color: '#3b82f6', weight: 10, opacity: 0.18 }),  // glow
-            L.polyline([], { color: '#60a5fa', weight: 4, opacity: 0.92 }),  // bright line
-        ]).addTo(map);
-        myTrailRef.current._lines = myTrailRef.current.getLayers();
+
 
         return () => { map.remove(); leafletRef.current = null; };
     }, []); // eslint-disable-line
@@ -149,7 +152,7 @@ export default function MapView({
     }, [playerRoutes, players, mini]);
 
 
-    // ── Independent traffic light markers on map ──────────────
+    // ── Traffic light markers on map ─────────────────────────
     useEffect(() => {
         const map = leafletRef.current;
         if (!map || mini) return;
@@ -164,7 +167,8 @@ export default function MapView({
             if (tls[id]) {
                 tls[id].setIcon(icon);
             } else {
-                tls[id] = L.marker(position, { icon, zIndexOffset: 200, interactive: false }).addTo(map);
+                // zIndexOffset: 50 — renders below player markers (600)
+                tls[id] = L.marker(position, { icon, zIndexOffset: 50, interactive: false }).addTo(map);
             }
         });
     }, [mapTrafficLights, mini]);
@@ -193,15 +197,17 @@ export default function MapView({
         const map = leafletRef.current;
         if (!map || !myPosition) return;
         const [lat, lng] = myPosition;
-        const myWkg = (myHr /* assuming we have hr passed, actually we need to estimate or just check zone */);
-        // MapView is missing 'zone' directly as a prop for 'my', but we can check if it's over Z5 logically if we pass it later. For now let's leave my player without a hardcoded Zone logic unless we pull it from players array.
+        // Scale label based on player count
+        const scale = Math.max(0.6, 1 - players.length * 0.03);
         const myPlayerData = players.find(p => p.id === myId);
-        const myZ5 = myPlayerData?.zone === 'Z5' || myPlayerData?.zone === 'Z6';
+        // Flame on: watts exceed 110% of FTP
+        const myFlame = myPlayerData?.watts && myPlayerData?.ftp ? myPlayerData.watts > myPlayerData.ftp * 1.1 : false;
 
         const icon = L.divIcon({
             className: '',
-            html: playerLabelHtml(myName, mySpeed, myHr, '#3b82f6', true, myZ5),
-            iconSize: [130, 65], iconAnchor: [10, 10],
+            html: playerLabelHtml(myName, mySpeed, myHr, '#3b82f6', true, myFlame, scale),
+            iconSize: [Math.round(130 * scale), Math.round(65 * scale)],
+            iconAnchor: [8, 8],
         });
         if (!myMarkerRef.current) {
             myMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map);
@@ -209,53 +215,48 @@ export default function MapView({
             myMarkerRef.current.setLatLng([lat, lng]);
             myMarkerRef.current.setIcon(icon);
         }
-        // Update both trail layers with latest coords
-        myTrailCoords.current.push([lat, lng]);
-        if (myTrailCoords.current.length > 1200) myTrailCoords.current.shift();
-        myTrailRef.current?._lines?.forEach(l => l.setLatLngs(myTrailCoords.current));
+
         if (!mini) map.panTo([lat, lng], { animate: true, duration: 0.6 });
-    }, [myPosition, mySpeed, myHr, myName, mini]);
+    }, [myPosition, mySpeed, myHr, myName, mini, players]);
 
     // ── Other players + their trails ─────────────────────────
     useEffect(() => {
         const map = leafletRef.current;
         if (!map) return;
         const existing = playerMarkersRef.current;
+        // Scale factor: more players → smaller labels to reduce overlap
+        const scale = Math.max(0.55, 1 - players.length * 0.04);
+        const iconW = Math.round(120 * scale);
+        const iconH = Math.round(60 * scale);
 
-        players.forEach(({ id, name, position, color = '#f97316', speed = 0, hr = 0, zone }) => {
+        players.forEach(({ id, name, position, color = '#f97316', speed = 0, hr = 0, watts = 0, ftp = 0 }) => {
             if (id === myId || !position) return;
-            const isZ5 = zone === 'Z5' || zone === 'Z6';
+            // Flame on: watts exceed 110% of FTP
+            const isFlame = ftp > 0 && watts > ftp * 1.1;
             const icon = L.divIcon({
                 className: '',
-                html: playerLabelHtml(name, speed, hr, color, false, isZ5),
-                iconSize: [120, 60], iconAnchor: [7, 7],
+                html: playerLabelHtml(name, speed, hr, color, false, isFlame, scale),
+                iconSize: [iconW, iconH], iconAnchor: [6, 6],
             });
             if (existing[id]) {
                 existing[id].marker.setLatLng(position);
                 existing[id].marker.setIcon(icon);
-                existing[id].coords.push([...position]);
-                if (existing[id].coords.length > 500) existing[id].coords.shift();
-                existing[id].trail.getLayers().forEach(l => l.setLatLngs(existing[id].coords));
             } else {
-                // Two-layer trail: glow + solid bright color line
-                const glow = L.polyline([[...position]], { color, weight: 9, opacity: 0.15 });
-                const bright = L.polyline([[...position]], { color, weight: 3, opacity: 0.80 });
-                const trail = L.layerGroup([glow, bright]).addTo(map);
-                const marker = L.marker(position, { icon, zIndexOffset: 50 }).addTo(map);
-                existing[id] = { marker, trail, coords: [[...position]] };
+                // zIndexOffset 600: renders above traffic lights (50) and police (300)
+                const marker = L.marker(position, { icon, zIndexOffset: 600 }).addTo(map);
+                existing[id] = { marker };
             }
         });
 
         Object.keys(existing).forEach(id => {
             if (!players.find(p => p.id === id)) {
                 existing[id].marker.remove();
-                existing[id].trail.remove();
                 delete existing[id];
             }
         });
     }, [players, myId]);
 
-    // ── Auto-fit: zoom to show all players (instructor mode) ─────
+    // ── Auto-fit: zoom to show all players + destination (instructor mode) ─
     useEffect(() => {
         if (!autoFit) return;
         const map = leafletRef.current;
@@ -264,14 +265,16 @@ export default function MapView({
             .filter(p => p.position)
             .map(p => p.position);
         if (myPosition) allPositions.push(myPosition);
+        // Always include the target/destination in the bounds
+        if (targetPosition) allPositions.push(targetPosition);
         if (allPositions.length < 1) return;
         if (allPositions.length === 1) {
-            map.setView(allPositions[0], 15, { animate: true, duration: 1 });
+            map.setView(allPositions[0], 14, { animate: true, duration: 1 });
         } else {
             const bounds = L.latLngBounds(allPositions);
-            map.fitBounds(bounds, { padding: [70, 70], maxZoom: 16, animate: true, duration: 1 });
+            map.fitBounds(bounds, { padding: [80, 80], maxZoom: 16, animate: true, duration: 1 });
         }
-    }, [autoFit, players, myPosition]);
+    }, [autoFit, players, myPosition, targetPosition]);
 
     const style = mini
         ? { width: '100%', height: '100%' }

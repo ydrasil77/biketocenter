@@ -98,8 +98,10 @@ export default function StartScreen({ onChoose }) {
                                     position: 'absolute', top: -16, background: '#22c55e', color: '#000',
                                     padding: '4px 16px', borderRadius: 99, fontSize: 13, fontWeight: 900,
                                     letterSpacing: 2, fontFamily: "'Barlow Condensed', sans-serif", fontStyle: 'italic',
-                                    animation: 'insertCoinBlink 1.5s infinite'
+                                    animation: 'insertCoinBlink 1.5s infinite',
+                                    display: 'flex', alignItems: 'center', gap: '8px'
                                 }}>
+                                    <img src="/insert-coin.png" style={{ height: '16px', objectFit: 'contain' }} alt="Insert Coin" />
                                     [ INSERT COIN ]
                                 </div>
                             )}

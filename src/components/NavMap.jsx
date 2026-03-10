@@ -84,9 +84,8 @@ export default function NavMap({
             maxZoom: 19, subdomains: 'abcd', opacity: 0.82,
         }).addTo(map);
 
-        trailGlowRef.current = L.polyline([], { color: '#22c55e', weight: 10, opacity: 0.18 }).addTo(map);
-        trailLineRef.current = L.polyline([], { color: '#4ade80', weight: 4, opacity: 0.95 }).addTo(map);
-        aheadRef.current = L.polyline([], { color: '#06b6d4', weight: 5, opacity: 0.85 }).addTo(map);
+        // Dotted route line to the finish (no trail behind player)
+        aheadRef.current = L.polyline([], { color: '#ffffff', weight: 3, opacity: 0.5, dashArray: '8 10' }).addTo(map);
 
         if (targetPosition) {
             L.marker(targetPosition, {
@@ -174,15 +173,9 @@ export default function NavMap({
 
         myDotRef.current?.setLatLng(position);
 
-        // Trail
-        trailCoords.current.push([...position]);
-        if (trailCoords.current.length > 1200) trailCoords.current.shift();
-        trailGlowRef.current?.setLatLngs(trailCoords.current);
-        trailLineRef.current?.setLatLngs(trailCoords.current);
-
-        // Route ahead
+        // Route ahead (dotted line to finish)
         if (route?.length) {
-            aheadRef.current?.setLatLngs(route.slice(Math.max(0, wpIndex - 1)));
+            aheadRef.current?.setLatLngs(route);
         }
 
         // Nav step (street name)

@@ -84,6 +84,10 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
         policeCheckpoints, policeStop, joinRoom, updatePosition,
     } = socket;
 
+    // If we joined a live session from the RaceList, skip the waiting screen
+    // immediately — even before the server sends back the ROOM_STATE event.
+    const effectiveRaceStarted = raceStarted || !!config.raceStarted;
+
     // ── Start position ─────────────────────────────────────────
     const localFallbackStart = calcStartPositions(cityData.center, 1, radiusKm)[0];
     const startPos = myStartPos ?? localFallbackStart;
@@ -349,7 +353,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
             </div>
 
             {/* ── WAITING SCREEN (Pre-Race) ────────────────────────── */}
-            {!raceStarted && countdown === null && (
+            {!effectiveRaceStarted && countdown === null && (
                 <div style={{
                     position: 'absolute', inset: 0, zIndex: 350,
                     background: 'rgba(4,4,7,0.85)', backdropFilter: 'blur(8px)',
@@ -479,19 +483,28 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                         ))}
                     </div>
 
-                    {/* BT status pill */}
-                    <div style={{
-                        background: bluetooth.bikeConnected ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${bluetooth.bikeConnected ? 'rgba(34,197,94,0.35)' : '#1e1e2e'}`,
-                        borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(6px, 1vh, 12px) clamp(10px, 1.5vw, 20px)',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0,
-                    }}>
-                        <div style={{ fontSize: 'clamp(8px, 1vw, 14px)', fontWeight: 700, letterSpacing: 1.5, color: '#52526a', fontFamily: 'Inter,sans-serif' }}>BT</div>
-                        <div style={{
-                            width: 'clamp(10px, 1.2vw, 16px)', height: 'clamp(10px, 1.2vw, 16px)', borderRadius: '50%',
-                            background: bluetooth.bikeConnected ? '#22c55e' : bluetooth.hrConnected ? '#ef4444' : '#2a2a3a',
-                            boxShadow: bluetooth.bikeConnected ? '0 0 6px #22c55e' : 'none',
-                        }} />
+                    {/* BT reconnect buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+                        <button onClick={() => bluetooth.connectBike()} style={{
+                            height: 28, borderRadius: 8, fontSize: 'clamp(8px, 0.9vw, 11px)', cursor: 'pointer',
+                            fontWeight: 700, fontFamily: 'Inter,sans-serif', letterSpacing: 1,
+                            background: bluetooth.bikeConnected ? 'rgba(34,197,94,0.15)' : 'rgba(59,130,246,0.12)',
+                            border: `1px solid ${bluetooth.bikeConnected ? 'rgba(34,197,94,0.4)' : 'rgba(59,130,246,0.3)'}`,
+                            color: bluetooth.bikeConnected ? '#22c55e' : '#3b82f6',
+                            padding: '0 10px', whiteSpace: 'nowrap',
+                        }}>
+                            {bluetooth.bikeConnected ? '✅ BIKE' : '📡 BIKE'}
+                        </button>
+                        <button onClick={() => bluetooth.connectBike()} style={{
+                            height: 28, borderRadius: 8, fontSize: 'clamp(8px, 0.9vw, 11px)', cursor: 'pointer',
+                            fontWeight: 700, fontFamily: 'Inter,sans-serif', letterSpacing: 1,
+                            background: bluetooth.hrConnected ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.04)',
+                            border: `1px solid ${bluetooth.hrConnected ? 'rgba(239,68,68,0.3)' : '#1e1e2e'}`,
+                            color: bluetooth.hrConnected ? '#ef4444' : '#52526a',
+                            padding: '0 10px', whiteSpace: 'nowrap',
+                        }}>
+                            {bluetooth.hrConnected ? '❤️ HR' : '❤ HR'}
+                        </button>
                     </div>
 
                     {/* Controls */}
@@ -502,7 +515,7 @@ export default function RaceView({ config, bluetooth, socket, onLeave }) {
                         <button onClick={() => setIsPaused(p => !p)} style={ctrlBtn(isPaused, '#eab308')}>
                             {isPaused ? '▶' : '⏸'}
                         </button>
-                        <button onClick={onLeave} style={ctrlBtn(false, '#ef4444')}>✕</button>
+                        <button onClick={onLeave} style={ctrlBtn(false, '#ef4444')}>✕ LEAVE</button>
                     </div>
                 </div>
             </div>

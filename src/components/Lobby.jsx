@@ -371,89 +371,93 @@ export default function Lobby({ onStart, onBack, bluetooth, initialRole, presetC
                 </div>
 
 
-                {/* ── Bluetooth section ── */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* ── Bluetooth section — riders only ── */}
+                {role === 'rider' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-                    {/* Web BT not supported warning */}
-                    {typeof navigator !== 'undefined' && !navigator.bluetooth && (
-                        <div style={{
-                            background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.25)',
-                            borderRadius: 10, padding: '8px 14px',
-                            fontSize: 11, color: '#eab308', fontFamily: 'Inter,sans-serif', lineHeight: 1.5,
-                        }}>
-                            ⚠️ Web Bluetooth requires Chrome or Edge on desktop / Android — not supported in this browser.
-                        </div>
-                    )}
-
-                    {/* Connected panel */}
-                    {btConnected ? (
-                        <div style={{
-                            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)',
-                            borderRadius: 12, padding: '12px 16px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            gap: 12,
-                        }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: '#22c55e', fontFamily: 'Inter,sans-serif' }}>
-                                    📡 BODY BIKE CONNECTED
-                                </div>
-                                <div style={{ display: 'flex', gap: 10, fontSize: 11, fontFamily: 'Inter,sans-serif' }}>
-                                    <span style={{ color: bikeConnected ? '#22c55e' : '#52526a' }}>
-                                        {bikeConnected ? '✅ Power + Cadence' : '⚪ Power'}
-                                    </span>
-                                    <span style={{ color: hrConnected ? '#ef4444' : '#52526a' }}>
-                                        {hrConnected ? '❤️ Heart Rate' : '⚪ HR'}
-                                    </span>
-                                </div>
-                            </div>
-                            <button onClick={handleConnect} style={{
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid #1e1e2e',
-                                borderRadius: 8, padding: '6px 12px', color: '#52526a',
-                                fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter,sans-serif',
-                            }}>Reconnect</button>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Quick Reconnect shortcut */}
-                            {savedDevice && (
-                                <button onClick={() => { setShowBtModal(true); quickReconnect(); }} style={{
-                                    background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)',
-                                    borderRadius: 10, padding: '10px 14px', color: '#22c55e', fontWeight: 700,
-                                    fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                }}>
-                                    <span>⚡ Quick Reconnect: {savedDevice.name}</span>
-                                    <span onClick={e => { e.stopPropagation(); clearSavedDevice(); }}
-                                        style={{ fontSize: 10, color: '#52526a', textDecoration: 'underline', cursor: 'pointer' }}>forget</span>
-                                </button>
-                            )}
-                            {/* Main connect button */}
-                            <button onClick={handleConnect} style={{
-                                background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
-                                border: 'none', borderRadius: 12, padding: '13px 20px',
-                                color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: 1,
-                                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                                boxShadow: '0 4px 20px rgba(59,130,246,0.35)',
+                        {/* Web BT not supported warning */}
+                        {typeof navigator !== 'undefined' && !navigator.bluetooth && (
+                            <div style={{
+                                background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.25)',
+                                borderRadius: 10, padding: '8px 14px',
+                                fontSize: 11, color: '#eab308', fontFamily: 'Inter,sans-serif', lineHeight: 1.5,
                             }}>
-                                📡 CONNECT BODY BIKE SMART+
-                            </button>
-                        </>
-                    )}
+                                ⚠️ Web Bluetooth requires Chrome or Edge on desktop / Android — not supported in this browser.
+                            </div>
+                        )}
 
-                    {/* JOIN RACE / OPEN INSTRUCTOR VIEW */}
-                    <button onClick={handleStart} style={{
-                        background: 'linear-gradient(135deg, #15803d, #22c55e)',
-                        border: 'none', borderRadius: 12, padding: '13px 20px',
-                        color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: 1,
-                        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                        boxShadow: '0 4px 20px rgba(34,197,94,0.35)',
-                    }}>
-                        {role === 'instructor' ? '📺 OPEN INSTRUCTOR VIEW' : '🚀 JOIN RACE'}
-                    </button>
+                        {/* Connected panel */}
+                        {btConnected ? (
+                            <div style={{
+                                background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)',
+                                borderRadius: 12, padding: '12px 16px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                gap: 12,
+                            }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: '#22c55e', fontFamily: 'Inter,sans-serif' }}>
+                                        📡 BODY BIKE CONNECTED
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 10, fontSize: 11, fontFamily: 'Inter,sans-serif' }}>
+                                        <span style={{ color: bikeConnected ? '#22c55e' : '#52526a' }}>
+                                            {bikeConnected ? '✅ Power + Cadence' : '⚪ Power'}
+                                        </span>
+                                        <span style={{ color: hrConnected ? '#ef4444' : '#52526a' }}>
+                                            {hrConnected ? '❤️ Heart Rate' : '⚪ HR'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onClick={handleConnect} style={{
+                                    background: 'rgba(255,255,255,0.05)', border: '1px solid #1e1e2e',
+                                    borderRadius: 8, padding: '6px 12px', color: '#52526a',
+                                    fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter,sans-serif',
+                                }}>Reconnect</button>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Quick Reconnect shortcut */}
+                                {savedDevice && (
+                                    <button onClick={() => { setShowBtModal(true); quickReconnect(); }} style={{
+                                        background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.2)',
+                                        borderRadius: 10, padding: '10px 14px', color: '#22c55e', fontWeight: 700,
+                                        fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    }}>
+                                        <span>⚡ Quick Reconnect: {savedDevice.name}</span>
+                                        <span onClick={e => { e.stopPropagation(); clearSavedDevice(); }}
+                                            style={{ fontSize: 10, color: '#52526a', textDecoration: 'underline', cursor: 'pointer' }}>forget</span>
+                                    </button>
+                                )}
+                                {/* Main connect button */}
+                                <button onClick={handleConnect} style={{
+                                    background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+                                    border: 'none', borderRadius: 12, padding: '13px 20px',
+                                    color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: 1,
+                                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                    boxShadow: '0 4px 20px rgba(59,130,246,0.35)',
+                                }}>
+                                    📡 CONNECT BODY BIKE SMART+
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* JOIN RACE / OPEN INSTRUCTOR VIEW */}
+                <button onClick={handleStart} style={{
+                    background: 'linear-gradient(135deg, #15803d, #22c55e)',
+                    border: 'none', borderRadius: 12, padding: '13px 20px',
+                    color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: 1,
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    boxShadow: '0 4px 20px rgba(34,197,94,0.35)',
+                }}>
+                    {role === 'instructor' ? '📺 OPEN INSTRUCTOR VIEW' : '🚀 JOIN RACE'}
+                </button>
+                {role === 'rider' && (
                     <p style={{ fontSize: 11, color: '#52526a', textAlign: 'center' }}>
                         No bike? Enable Simulator in the race.
                     </p>
-                </div>
+                )}
             </div>
 
             {/* BT Connection Modal — shown while connecting / after connect / on error */}
