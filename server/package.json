@@ -2,6 +2,7 @@
     "name": "dark-velocity-server",
     "version": "1.0.0",
     "description": "Dark Velocity multiplayer race server",
+    "type": "module",
     "main": "index.js",
     "scripts": {
         "start": "node index.js",
