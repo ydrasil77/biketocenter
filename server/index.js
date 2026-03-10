@@ -13,7 +13,9 @@ import {
     addBots, broadcastPlayerList,
 } from './roomManager.js';
 
+// Load .env from project root (local dev) or from server/ folder (cloud deploy)
 dotenv.config({ path: '../.env' });
+dotenv.config(); // also try server/.env if present
 
 const app = express();
 const server = http.createServer(app);
