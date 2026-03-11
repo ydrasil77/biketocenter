@@ -1,0 +1,28 @@
+{
+  "name": "Dark Velocity — Cycle Race",
+  "short_name": "Dark Velocity",
+  "description": "Multiplayer indoor cycling race with real watts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#040407",
+  "theme_color": "#040407",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "/phantom-bike.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/phantom-bike.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/phantom-bike.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
