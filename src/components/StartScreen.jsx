@@ -41,36 +41,50 @@ export default function StartScreen({ onChoose }) {
         <div style={{
             position: 'fixed', inset: 0,
             background: 'radial-gradient(ellipse at 40% 20%, #0f0f2e 0%, #040407 70%)',
-            display: 'flex', flexDirection: 'row',
+            display: 'flex', flexDirection: 'column',
             opacity: show ? 1 : 0, transition: 'opacity 0.5s ease',
+            overflowY: 'auto',
         }}>
-            {/* LEFT SIDE: Actions */}
+            {/* TOP: Logo + Arcade Leaderboard */}
             <div style={{
-                flex: 1, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                padding: '40px 24px', position: 'relative',
-                borderRight: '1px solid rgba(255,255,255,0.05)'
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: 'clamp(20px,4vh,40px) clamp(16px,4vw,40px) 0',
+                flex: '0 0 auto',
             }}>
                 {/* Logo */}
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
                     <div style={{
                         fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                        fontSize: 'clamp(64px,10vw,100px)', fontWeight: 900, letterSpacing: -2, lineHeight: 1,
+                        fontSize: 'clamp(40px,8vw,90px)', fontWeight: 900, letterSpacing: -2, lineHeight: 1,
                         background: 'linear-gradient(135deg,#fff 30%,#3b82f6 100%)',
                         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                     }}>DARK VELOCITY</div>
-                    <p style={{ fontSize: 14, letterSpacing: 6, color: '#52526a', textTransform: 'uppercase', marginTop: 12 }}>
+                    <p style={{ fontSize: 'clamp(10px,1.5vw,14px)', letterSpacing: 6, color: '#52526a', textTransform: 'uppercase', marginTop: 8 }}>
                         Multiplayer Indoor Cycle Race
                     </p>
                 </div>
 
+                {/* Leaderboard */}
+                <div style={{ width: '100%', maxWidth: 900 }}>
+                    <GlobalLeaderboard embedded={true} />
+                </div>
+            </div>
+
+            {/* BOTTOM: Insert coin + Role cards */}
+            <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: 'clamp(16px,3vh,32px) clamp(16px,4vw,40px) clamp(16px,3vh,32px)',
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+                background: 'rgba(0,0,0,0.2)',
+                flex: '0 0 auto',
+            }}>
                 {/* INSERT COIN gif */}
-                <div style={{ textAlign: 'center', marginBottom: 36 }}>
+                <div style={{ textAlign: 'center', marginBottom: 'clamp(16px,3vh,28px)' }}>
                     <img
                         src="/insert-coin.gif"
                         alt="Insert Coin to Continue"
                         style={{
-                            maxHeight: 'clamp(70px, 10vh, 130px)',
+                            maxHeight: 'clamp(50px,8vh,100px)',
                             maxWidth: '80%',
                             objectFit: 'contain',
                             filter: 'drop-shadow(0 0 32px rgba(34,197,94,0.5))',
@@ -81,7 +95,7 @@ export default function StartScreen({ onChoose }) {
                 </div>
 
                 {/* Role cards */}
-                <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', gap: 'clamp(16px,3vw,32px)', flexWrap: 'wrap', justifyContent: 'center' }}>
                     {cards.map(card => (
                         <button
                             key={card.id}
@@ -89,52 +103,42 @@ export default function StartScreen({ onChoose }) {
                             onMouseEnter={() => setHovered(card.id)}
                             onMouseLeave={() => setHovered(null)}
                             style={{
-                                width: card.isPrimary ? 300 : 240, padding: card.isPrimary ? '48px 32px' : '36px 24px', borderRadius: 24,
+                                width: 'clamp(160px,28vw,280px)',
+                                padding: 'clamp(20px,3vh,40px) clamp(16px,2vw,28px)',
+                                borderRadius: 24,
                                 background: hovered === card.id
                                     ? `rgba(${card.id === 'rider' ? '34,197,94' : '59,130,246'},0.12)`
                                     : 'rgba(255,255,255,0.03)',
                                 border: `2px solid ${hovered === card.id ? card.border : card.isPrimary ? 'rgba(34,197,94,0.3)' : '#1e1e2e'}`,
                                 boxShadow: hovered === card.id ? `0 0 40px ${card.glow}, 0 20px 60px rgba(0,0,0,0.5)` : (card.isPrimary ? '0 0 20px rgba(34,197,94,0.1)' : '0 8px 32px rgba(0,0,0,0.4)'),
                                 cursor: 'pointer', transition: 'all 0.25s ease',
-                                transform: hovered === card.id ? 'translateY(-6px) scale(1.02)' : 'none',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
-                                position: 'relative'
+                                transform: hovered === card.id ? 'translateY(-4px) scale(1.02)' : 'none',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
                             }}
                         >
-
-                            <div style={{ fontSize: card.isPrimary ? 64 : 52, lineHeight: 1 }}>{card.icon}</div>
+                            <div style={{ fontSize: 'clamp(36px,6vw,60px)', lineHeight: 1 }}>{card.icon}</div>
                             <div style={{
                                 fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                                fontSize: card.isPrimary ? 36 : 28, fontWeight: 900, letterSpacing: 1,
+                                fontSize: 'clamp(22px,3vw,32px)', fontWeight: 900, letterSpacing: 1,
                                 color: hovered === card.id ? card.color : '#e2e2f0',
                                 transition: 'color 0.25s',
                             }}>{card.label}</div>
                             <p style={{
-                                fontSize: 13, color: '#94a3b8', lineHeight: 1.6,
-                                textAlign: 'center', fontFamily: 'Inter, sans-serif',
+                                fontSize: 'clamp(11px,1.2vw,13px)', color: '#94a3b8', lineHeight: 1.5,
+                                textAlign: 'center', fontFamily: 'Inter, sans-serif', margin: 0,
                             }}>{card.sub}</p>
                             <div style={{
-                                marginTop: 12, fontSize: 13, fontWeight: 800, letterSpacing: 3,
+                                marginTop: 8, fontSize: 12, fontWeight: 800, letterSpacing: 3,
                                 color: card.color, opacity: hovered === card.id ? 1 : 0.5,
-                                transition: 'opacity 0.2s',
-                                fontFamily: 'Inter, sans-serif',
+                                transition: 'opacity 0.2s', fontFamily: 'Inter, sans-serif',
                             }}>CONTINUE →</div>
                         </button>
                     ))}
                 </div>
 
-                <p style={{ position: 'absolute', bottom: 16, left: 24, fontSize: 10, color: '#2a2a3a', letterSpacing: 2, textTransform: 'uppercase' }}>
+                <p style={{ marginTop: 20, fontSize: 10, color: '#2a2a3a', letterSpacing: 2, textTransform: 'uppercase' }}>
                     Powered by OSRM · Leaflet · Socket.io
                 </p>
-            </div>
-
-            {/* RIGHT SIDE: Arcade Leaderboard embedded */}
-            <div style={{
-                flex: 1, display: 'flex', flexDirection: 'column',
-                overflowY: 'auto', padding: '40px 24px',
-                background: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 100%)'
-            }}>
-                <GlobalLeaderboard embedded={true} />
             </div>
         </div>
     );

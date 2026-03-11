@@ -188,71 +188,75 @@ export default function InstructorView({ config, socket, onLeave }) {
             <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: 'clamp(8px, 1.5vh, 20px) clamp(16px, 2vw, 30px)',
-                background: 'rgba(4,4,7,0.92)',
+                flexWrap: 'wrap', gap: 8,
+                padding: 'clamp(6px, 1.2vh, 16px) clamp(10px, 2vw, 24px)',
+                background: 'rgba(4,4,7,0.95)',
                 backdropFilter: 'blur(16px)',
                 borderBottom: '1px solid #1e1e2e',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1vw, 14px)' }}>
+                {/* Title row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                     <h1 style={{
                         fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic',
-                        fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 900, margin: 0,
+                        fontSize: 'clamp(16px, 2.5vw, 28px)', fontWeight: 900, margin: 0,
                         background: 'linear-gradient(135deg,#fff 30%,#3b82f6 100%)',
                         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                        whiteSpace: 'nowrap',
                     }}>DARK VELOCITY</h1>
-                    <span style={{ fontSize: 'clamp(9px, 1vw, 13px)', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, padding: 'clamp(2px, 0.5vh, 4px) clamp(6px, 1vw, 12px)', color: '#3b82f6', fontWeight: 700, letterSpacing: 1 }}>INSTRUCTOR</span>
-                    <span style={{ fontSize: 'clamp(10px, 1.2vw, 14px)', color: '#52526a', fontWeight: 600 }}>{cityData.name} → {cityData.target}</span>
+                    <span style={{ fontSize: 'clamp(8px, 1vw, 12px)', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, padding: '2px 8px', color: '#3b82f6', fontWeight: 700, letterSpacing: 1, whiteSpace: 'nowrap' }}>INSTRUCTOR</span>
+                    <span style={{ fontSize: 'clamp(9px, 1.2vw, 13px)', color: '#52526a', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{playMode === 'mountain' ? `⛰ ${mountainId}` : `${cityData.name} → ${cityData.target}`}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1vw, 12px)' }}>
+                {/* Controls — scrollable on very small screens */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <TrafficLight state={trafficState} />
 
                     {/* Bot simulation panel */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 10, padding: '6px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 10, padding: '5px 10px' }}>
                         <span style={{ fontSize: 12, color: '#a855f7', fontWeight: 700 }}>🤖</span>
                         <input
                             type="number" min={0} max={15} value={simBotCount}
                             onChange={e => setSimBotCount(Math.min(15, Math.max(0, Number(e.target.value))))}
-                            style={{ width: 40, background: '#0d0d14', border: '1px solid #1e1e2e', borderRadius: 6, color: '#e2e2f0', fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 700, padding: '2px 6px', textAlign: 'center', outline: 'none' }}
+                            style={{ width: 36, background: '#0d0d14', border: '1px solid #1e1e2e', borderRadius: 6, color: '#e2e2f0', fontFamily: 'Inter,sans-serif', fontSize: 13, fontWeight: 700, padding: '2px 4px', textAlign: 'center', outline: 'none' }}
                         />
                         <button onClick={handleToggleBots} style={{
                             background: simActive ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)',
                             border: `1px solid ${simActive ? '#a855f7' : '#1e1e2e'}`,
-                            borderRadius: 7, padding: '5px 12px',
-                            color: simActive ? '#a855f7' : '#e2e2f0', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                        }}>{simActive ? '⏹ STOP' : '▶ SIMULATE'}</button>
+                            borderRadius: 7, padding: '4px 10px',
+                            color: simActive ? '#a855f7' : '#e2e2f0', fontWeight: 700, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
+                        }}>{simActive ? '⏹ STOP' : '▶ SIM'}</button>
                     </div>
 
                     {!countdownStarted ? (
                         <button onClick={handleStart} style={{
                             background: 'linear-gradient(135deg,#15803d,#22c55e)', border: 'none',
-                            borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(8px, 1.5vh, 12px) clamp(16px, 2vw, 24px)', color: '#fff',
-                            fontWeight: 700, fontSize: 'clamp(12px, 1.5vw, 16px)', letterSpacing: 1, cursor: 'pointer',
-                            boxShadow: '0 4px 20px rgba(34,197,94,0.4)',
-                        }}>🏁 START RACE</button>
+                            borderRadius: 10, padding: 'clamp(6px,1.2vh,10px) clamp(12px,1.5vw,20px)', color: '#fff',
+                            fontWeight: 700, fontSize: 'clamp(11px, 1.4vw, 15px)', letterSpacing: 1, cursor: 'pointer',
+                            boxShadow: '0 4px 20px rgba(34,197,94,0.4)', whiteSpace: 'nowrap',
+                        }}>🏁 START</button>
                     ) : (
-                        <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(8px, 1.5vh, 12px) clamp(16px, 2vw, 24px)', color: '#22c55e', fontWeight: 700, fontSize: 'clamp(12px, 1.5vw, 16px)' }}>
-                            {raceStarted ? '🚀 RACE IN PROGRESS' : countdown !== null ? `STARTING IN ${countdown}…` : '✅ STARTED'}
+                        <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: 10, padding: 'clamp(6px,1.2vh,10px) clamp(12px,1.5vw,20px)', color: '#22c55e', fontWeight: 700, fontSize: 'clamp(11px, 1.4vw, 14px)', whiteSpace: 'nowrap' }}>
+                            {raceStarted ? '🚀 LIVE' : countdown !== null ? `${countdown}…` : '✅ GO'}
                         </div>
                     )}
 
-                    <button onClick={onLeave} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(8px, 1.5vh, 12px) clamp(12px, 1.5vw, 20px)', color: '#ef4444', fontWeight: 700, fontSize: 'clamp(11px, 1.2vw, 14px)', cursor: 'pointer' }}>✕ END</button>
+                    <button onClick={onLeave} style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: 'clamp(6px,1.2vh,10px) clamp(10px,1.2vw,16px)', color: '#ef4444', fontWeight: 700, fontSize: 'clamp(11px, 1.2vw, 13px)', cursor: 'pointer', whiteSpace: 'nowrap' }}>✕ END</button>
                 </div>
             </div>
 
             {/* ── BOTTOM LEFT: QR + count (not shown in mountain mode — QR is in the side panel) */}
             {playMode !== 'mountain' && (
-                <div style={{ position: 'absolute', bottom: 'clamp(16px, 3vh, 32px)', left: 'clamp(16px, 3vw, 32px)', zIndex: 100, display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 1.5vh, 16px)' }}>
-                    <div className="glass" style={{ borderRadius: 'clamp(12px, 2vw, 20px)', padding: 'clamp(12px, 2vw, 24px)', textAlign: 'center' }}>
-                        <div style={{ background: '#fff', borderRadius: 'clamp(8px, 1vw, 12px)', padding: 'clamp(4px, 1vw, 10px)', display: 'inline-block', marginBottom: 'clamp(4px, 1vh, 10px)' }}>
-                            <QRCodeSVG value={joinUrl} size={110} style={{ width: 'clamp(80px, 12vw, 160px)', height: 'clamp(80px, 12vw, 160px)' }} level="M" />
+                <div style={{ position: 'absolute', bottom: 'clamp(10px, 2vh, 24px)', left: 'clamp(10px, 2vw, 24px)', zIndex: 100, display: 'flex', flexDirection: 'column', gap: 'clamp(6px, 1vh, 12px)' }}>
+                    <div className="glass" style={{ borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(8px, 1.5vw, 18px)', textAlign: 'center' }}>
+                        <div style={{ background: '#fff', borderRadius: 8, padding: 'clamp(3px, 0.5vw, 8px)', display: 'inline-block', marginBottom: 6 }}>
+                            <QRCodeSVG value={joinUrl} size={80} style={{ width: 'clamp(60px, 10vw, 120px)', height: 'clamp(60px, 10vw, 120px)', display: 'block' }} level="M" />
                         </div>
-                        <p style={{ fontSize: 'clamp(11px, 1.5vw, 16px)', fontWeight: 800, letterSpacing: 2, marginBottom: 'clamp(2px, 0.5vh, 4px)', margin: 0 }}>ROOM · {roomCode}</p>
-                        <p style={{ fontSize: 'clamp(9px, 1vw, 12px)', color: '#52526a', letterSpacing: 1, margin: 0 }}>SCAN TO JOIN</p>
+                        <p style={{ fontSize: 'clamp(9px, 1.2vw, 14px)', fontWeight: 800, letterSpacing: 2, margin: 0 }}>ROOM · {roomCode}</p>
+                        <p style={{ fontSize: 'clamp(8px, 0.9vw, 11px)', color: '#52526a', letterSpacing: 1, margin: 0 }}>SCAN TO JOIN</p>
                     </div>
-                    <div className="glass" style={{ borderRadius: 'clamp(10px, 1.5vw, 16px)', padding: 'clamp(8px, 1.2vw, 16px)', textAlign: 'center' }}>
-                        <p style={{ fontSize: 'clamp(24px, 4vw, 40px)', fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', margin: 0 }}>{riderCount}</p>
-                        <p style={{ fontSize: 'clamp(9px, 1vw, 13px)', color: '#52526a', letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>Riders on Map</p>
+                    <div className="glass" style={{ borderRadius: 'clamp(8px, 1.2vw, 14px)', padding: 'clamp(6px, 1vw, 14px)', textAlign: 'center' }}>
+                        <p style={{ fontSize: 'clamp(20px, 3.5vw, 36px)', fontWeight: 900, fontFamily: "'Barlow Condensed',sans-serif", fontStyle: 'italic', margin: 0 }}>{riderCount}</p>
+                        <p style={{ fontSize: 'clamp(8px, 0.9vw, 12px)', color: '#52526a', letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}>Riders on Map</p>
                     </div>
                 </div>
             )}
