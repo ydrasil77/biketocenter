@@ -97,6 +97,69 @@ You don't need to do anything manually after a push.
 
 ---
 
+---
+
+## Part 4 — Alternative: Deploy Backend to Render (Free)
+
+Render has a genuinely free tier — 750 hours/month (enough for one always-on service).
+
+> ⚠️ **Caveat:** Free Render services sleep after 15 minutes of inactivity. The first connection after sleeping takes ~30 seconds to wake up. For a cycling class, just open the instructor view a minute before your riders join.
+
+### Step 1 — Sign up
+Go to [render.com](https://render.com) and sign in with GitHub.
+
+### Step 2 — Create a new Web Service
+1. Click **New → Web Service**
+2. Connect your GitHub account and select the `biketocenter` repo
+3. Configure:
+
+| Setting | Value |
+|---------|-------|
+| **Name** | `dark-velocity-server` |
+| **Root Directory** | `server` |
+| **Runtime** | `Node` |
+| **Build Command** | `npm install` |
+| **Start Command** | `node index.js` |
+| **Instance Type** | `Free` |
+
+4. Click **Create Web Service**
+
+### Step 3 — Add environment variables
+In your service → **Environment** tab, add:
+
+| Name | Value |
+|------|-------|
+| `NODE_VERSION` | `20` |
+
+For Strava (optional):
+| Name | Value |
+|------|-------|
+| `STRAVA_CLIENT_ID` | your client ID |
+| `STRAVA_CLIENT_SECRET` | your client secret |
+| `STRAVA_REDIRECT_URI` | `https://your-render-url.onrender.com/auth/strava/callback` |
+| `FRONTEND_URL` | `https://your-vercel-url.vercel.app` |
+
+### Step 4 — Get your URL
+Your service URL will be: `https://dark-velocity-server.onrender.com`
+
+Test it:
+```
+https://dark-velocity-server.onrender.com/health
+```
+Should return `{"status":"ok"}` (may take 30s first time).
+
+### Step 5 — Update Vercel
+In Vercel → **Settings → Environment Variables**, update `VITE_SERVER_URL`:
+```
+https://dark-velocity-server.onrender.com
+```
+Then **Redeploy** on Vercel.
+
+### Keep-alive tip (optional)
+To prevent the 30-second cold start, add a free cron job on [cron-job.org](https://cron-job.org) that pings your `/health` URL every 10 minutes. This keeps Render awake.
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |
