@@ -6,7 +6,7 @@
   "display": "standalone",
   "background_color": "#040407",
   "theme_color": "#040407",
-  "orientation": "landscape",
+  "orientation": "any",
   "icons": [
     {
       "src": "/phantom-bike.png",
